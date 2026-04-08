@@ -4,4 +4,19 @@
 .Ruserdata
 
 # ignore the model files 
-models/
+models
+
+# Quarto render output/cache
+.quarto/
+manuscript/.quarto/
+presentation/.quarto/
+**/*.quarto_ipynb
+manuscript/_output/
+manuscript/output/
+presentation/output/
+raw_data/
+.DS_Store
+.DS_store
+.vscode/
+__pycache__/
+*.code-workspace

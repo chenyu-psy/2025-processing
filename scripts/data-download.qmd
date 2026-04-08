@@ -1,0 +1,519 @@
+---
+title: "data-preprocessing"
+format: html
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+# Clear workspacce and set default color
+
+```{r reset, include=FALSE}
+graphics.off()
+rm(list=ls(all.names=TRUE))
+options(digits = 3)
+```
+
+# Import functions and packages
+
+```{r}
+
+# Install and load required packages
+packages = c(
+  # CRAN packages
+  "tidyverse",
+  # Github packages for specialized functions
+  "chenyu-psy/smartr@v0.3.2"
+)
+process_packages(packages, quietly = TRUE)
+
+```
+
+
+# Experiment 1a
+
+The data has been saved in local folder `./raw_data/Data_Exp1/`
+
+```{r}
+Metadata_Exp1.1 <- read_metaData("./raw_data/Data_Exp1.1/metadata.json")
+Metadata_Exp1.2 <- read_metaData("./raw_data/Data_Exp1.2/metadata.json")
+
+
+Metadata_Exp1 <- bind_rows(Metadata_Exp1.1, Metadata_Exp1.2) %>% 
+  smartr::extract_data_info(info="participant")
+
+
+Metadata_Exp1_filtered <- Metadata_Exp1 %>% 
+  filter(studyState == "FINISHED" | resultId %in% c(42167, 42185))
+
+Raw_Exp1 <- read_json_data(Metadata_Exp1_filtered$file) %>% 
+  group_by(participant) %>% 
+  mutate(participant = cur_group_id()) %>% 
+  ungroup()
+
+Data_Exp1 <- Raw_Exp1 %>%
+  filter(blockID > 0, screenID %in% c("memory-resp", "retrieval")) %>% 
+  select(participant, blockID, trialID, condition, screenID, 
+         leftColor, rightColor, leftImage, rightImage, correctObject,
+         response, acc, rt) %>% 
+  mutate(response = as.character(response))
+  
+Data_Exp1 %>% write_csv(file = "./data/source/Data_Exp1.csv")
+
+
+Survey_Exp1 <- Raw_Exp1 %>% 
+  filter(screenID == "survey") %>% 
+  select(participant, response) %>% 
+  unnest_wider(response) %>% 
+  select(!starts_with("P0"))
+
+Survey_Exp1 %>%
+  write_csv(file = "./data/source/Survey_Exp1.csv")
+
+
+```
+
+# Experiment 1b
+
+
+```{r}
+
+Metadata_Exp1b <- read_metaData("./raw_data/Data_Exp1b/metadata.json")
+
+Metadata_Exp1b_filtered <- Metadata_Exp1b %>% 
+  filter(studyState == "FINISHED") %>% 
+  slice(1:50)
+
+Raw_Exp1b <- read_json_data(Metadata_Exp1b_filtered$file) %>% 
+  group_by(participant) %>% 
+  mutate(participant = cur_group_id()) %>% 
+  ungroup()
+
+Data_Exp1b <- Raw_Exp1b %>%
+  filter(blockID > 0, screenID %in% c("processing", "memory-resp", "retrieval")) %>% 
+  select(participant, blockID, trialID, condition, screenID, 
+         leftColor, rightColor, leftImage, rightImage, correctObject, correctJudge,
+         response, acc, rt) %>% 
+  rename(correctResp=correctJudge) %>% 
+  mutate(
+    correctResp = case_when(
+      condition=="B" & leftImage=="image26" ~ "left",
+      condition=="B" & rightImage=="image26" ~ "right",
+      TRUE ~ correctResp),
+    acc = case_when(
+      condition=="B"&screenID=="processing" ~ correctResp==response,
+      TRUE ~ acc
+    )) %>% 
+  mutate(response = as.character(response)) %>% 
+  mutate(
+    target = case_when(
+      screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
+      screenID=="memory-resp" & rightColor=="#FFFFFF" ~ leftImage,
+      screenID=="retrieval" ~ correctObject,
+      TRUE ~ NA_character_
+    ),
+    distractor = case_when(
+      screenID=="memory-resp" & correctResp=="left" ~ leftImage,
+      screenID=="memory-resp" & correctResp=="right" ~ rightImage,
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  mutate(
+    distractor = case_when(
+      screenID=="retrieval" ~ distractor[target==target][1],
+      TRUE ~ distractor
+    ),
+    .by = c(participant, blockID, trialID)
+  )
+
+Data_Exp1b %>% write_csv(file = "./data/source/Data_Exp1b.csv")
+
+Survey_Exp1b <- Raw_Exp1b %>% 
+  filter(screenID == "survey") %>% 
+  select(participant, response) %>% 
+  unnest_wider(response) %>% 
+  select(!starts_with("P0"))
+
+Survey_Exp1b %>%
+  write_csv(file = "./data/source/Survey_Exp1b.csv")
+
+```
+
+# Experiment 2a
+
+## Download data
+```{r}
+# Download the data from JATOS
+Metadata_Exp2a <- get_JATOS_data(
+  token = "jap_bQ7jROzehBh7WTt0I2CrjLJyBZIUIfkd5079d",
+  url = "https://coglab.xyz/jatos/api/v1/results",
+  batchId = c(1411),
+  dataPath = "./raw_data/Data_Exp2a/"
+)
+
+```
+
+## Retrieve data
+```{r}
+
+Metadata_Exp2a <- read_metaData("./raw_data/Data_Exp2a/metadata.json") %>% 
+  extract_data_info("participant")
+
+Metadata_Exp2a_filtered <- Metadata_Exp2a %>% 
+  filter(studyState == "FINISHED")
+
+Raw_Exp2a <- read_json_data(Metadata_Exp2a_filtered$file) %>% 
+  group_by(participant) %>% 
+  mutate(participant = cur_group_id()) %>% 
+  ungroup()
+
+Data_Exp2a <- Raw_Exp2a %>%
+  filter(blockID > 0, screenID %in% c("processing", "memory-resp", "retrieval")) %>% 
+  select(participant, blockID, trialID, condition, screenID, 
+         leftColor, rightColor, leftImage, rightImage, correctObject, correctJudge,
+         response, acc, rt) %>% 
+  rename(correctResp=correctJudge) %>% 
+  mutate(
+    # correctResp = case_when(
+    #   condition=="B" & leftImage=="image26" ~ "left",
+    #   condition=="B" & rightImage=="image26" ~ "right",
+    #   TRUE ~ correctResp),
+    # acc = case_when(
+    #   condition=="B"&screenID=="processing" ~ correctResp==response,
+    #   TRUE ~ acc
+    # )
+    ) %>% 
+  mutate(response = as.character(response)) %>% 
+  mutate(
+    target = case_when(
+      screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
+      screenID=="memory-resp" & rightColor=="#FFFFFF" ~ leftImage,
+      screenID=="retrieval" ~ correctObject,
+      TRUE ~ NA_character_
+    ),
+    distractor = case_when(
+      screenID=="memory-resp" & correctResp=="left" ~ leftImage,
+      screenID=="memory-resp" & correctResp=="right" ~ rightImage,
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  mutate(
+    distractor = case_when(
+      screenID=="retrieval" ~ distractor[target==target][1],
+      TRUE ~ distractor
+    ),
+    .by = c(participant, blockID, trialID)
+  )
+
+Data_Exp2a %>% write_csv(file = "./data/source/Data_Exp2a.csv")
+
+Survey_Exp2a <- Raw_Exp2a %>% 
+  filter(screenID == "survey") %>% 
+  select(participant, response) %>% 
+  unnest_wider(response) %>% 
+  select(!starts_with("P0"))
+
+Survey_Exp2a %>%
+  write_csv(file = "./data/source/Survey_Exp2a.csv")
+
+```
+
+
+# Experiment 2b
+
+## Download data
+```{r}
+# Download the data from JATOS
+Metadata_Exp2b <- get_JATOS_data(
+  token = "jap_bQ7jROzehBh7WTt0I2CrjLJyBZIUIfkd5079d",
+  url = "https://coglab.xyz/jatos/api/v1/results",
+  batchId = c(1510),
+  dataPath = "./raw_data/Data_Exp2b/"
+)
+
+```
+
+## Retrieve data
+```{r}
+
+Metadata_Exp2b <- read_metaData("./raw_data/Data_Exp2b/metadata.json") %>% 
+  extract_data_info("participant")
+
+Metadata_Exp2b_filtered <- Metadata_Exp2b %>% 
+  filter(studyState == "FINISHED")
+
+Raw_Exp2b <- read_json_data(Metadata_Exp2b_filtered$file) %>% 
+  group_by(participant) %>% 
+  mutate(participant = cur_group_id()) %>% 
+  ungroup()
+
+Data_Exp2b <- Raw_Exp2b %>%
+  filter(blockID > 0, screenID %in% c("processing", "memory-resp", "retrieval")) %>% 
+  select(participant, blockID, trialID, condition, screenID, 
+         leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
+         response, acc, rt) %>% 
+  rename(correctResp=correctJudge) %>% 
+  mutate(response = as.character(response)) %>% 
+  mutate(
+    target = case_when(
+      screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
+      screenID=="memory-resp" & rightColor=="#FFFFFF" ~ leftImage,
+      screenID=="retrieval" ~ correctObject,
+      TRUE ~ NA_character_
+    ),
+    distractor = case_when(
+      screenID=="memory-resp" & correctResp=="left" ~ leftImage,
+      screenID=="memory-resp" & correctResp=="right" ~ rightImage,
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  mutate(
+    distractor = case_when(
+      screenID=="retrieval" ~ distractor[target==target][1],
+      TRUE ~ distractor
+    ),
+    .by = c(participant, blockID, trialID)
+  )
+
+Data_Exp2b %>% write_csv(file = "./data/source/Data_Exp2b.csv")
+
+Survey_Exp2b <- Raw_Exp2b %>% 
+  filter(screenID == "survey") %>% 
+  select(participant, response) %>% 
+  unnest_wider(response) %>% 
+  select(!starts_with("P0"))
+
+Survey_Exp2b %>%
+  write_csv(file = "./data/source/Survey_Exp2b.csv")
+
+```
+
+
+# Experiment 2c
+
+## Download data
+```{r}
+# Download the data from JATOS
+Metadata_Exp2c <- get_JATOS_data(
+  token = "jap_bQ7jROzehBh7WTt0I2CrjLJyBZIUIfkd5079d",
+  url = "https://coglab.xyz/jatos/api/v1/results",
+  batchId = c(1518),
+  dataPath = "./raw_data/Data_Exp2c/"
+)
+
+```
+
+## Retrieve data
+```{r}
+
+Metadata_Exp2c <- read_metaData("./raw_data/Data_Exp2c/metadata.json") %>% 
+  extract_data_info("participant")
+
+Metadata_Exp2c_filtered <- Metadata_Exp2c %>% 
+  filter(studyState == "FINISHED")
+
+Raw_Exp2c <- read_json_data(Metadata_Exp2c_filtered$file) %>% 
+  group_by(participant) %>% 
+  mutate(participant = cur_group_id()) %>% 
+  ungroup()
+
+Data_Exp2c <- Raw_Exp2c %>%
+  filter(blockID > 0, screenID %in% c("processing", "memory-resp", "retrieval")) %>% 
+  select(participant, blockID, trialID, condition, screenID, 
+         leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
+         response, acc, rt) %>% 
+  rename(correctResp=correctJudge) %>% 
+  mutate(response = as.character(response)) %>% 
+  mutate(
+    target = case_when(
+      screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
+      screenID=="memory-resp" & rightColor=="#FFFFFF" ~ leftImage,
+      screenID=="retrieval" ~ correctObject,
+      TRUE ~ NA_character_
+    ),
+    distractor = case_when(
+      screenID=="memory-resp" & correctResp=="left" ~ leftImage,
+      screenID=="memory-resp" & correctResp=="right" ~ rightImage,
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  mutate(
+    distractor = case_when(
+      screenID=="retrieval" ~ distractor[target==target][1],
+      TRUE ~ distractor
+    ),
+    .by = c(participant, blockID, trialID)
+  )
+
+Data_Exp2c %>% write_csv(file = "./data/source/Data_Exp2c.csv")
+
+Survey_Exp2c <- Raw_Exp2c %>% 
+  filter(screenID == "survey") %>% 
+  select(participant, response) %>% 
+  unnest_wider(response) %>% 
+  select(!starts_with("P0"))
+
+Survey_Exp2c %>%
+  write_csv(file = "./data/source/Survey_Exp2c.csv")
+
+```
+
+# Experiment 2d
+
+## Download data
+```{r}
+# Download the data from JATOS
+Metadata_Exp2d <- get_JATOS_data(
+  token = "jap_bQ7jROzehBh7WTt0I2CrjLJyBZIUIfkd5079d",
+  url = "https://coglab.xyz/jatos/api/v1/results",
+  batchId = c(1539),
+  dataPath = "./raw_data/Data_Exp2d/"
+)
+
+```
+
+## Retrieve data
+```{r}
+
+Metadata_Exp2d <- read_metaData("./raw_data/Data_Exp2d/metadata.json") %>% 
+  extract_data_info("participant")
+
+Metadata_Exp2d_filtered <- Metadata_Exp2d %>% 
+  filter(studyState == "FINISHED" | resultId %in% c("69779", "69801"))
+
+Raw_Exp2d <- read_json_data(Metadata_Exp2d_filtered$file) %>% 
+  group_by(participant) %>% 
+  mutate(participant = cur_group_id()) %>% 
+  ungroup()
+
+Data_Exp2d <- Raw_Exp2d %>%
+  filter(blockID > 0, screenID %in% c("processing", "memory-resp", "retrieval")) %>% 
+  select(participant, blockID, trialID, condition, screenID, 
+         leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
+         response, acc, rt) %>% 
+  rename(correctResp=correctJudge) %>% 
+  mutate(response = as.character(response)) %>% 
+  mutate(
+    target = case_when(
+      screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
+      screenID=="memory-resp" & rightColor=="#FFFFFF" ~ leftImage,
+      screenID=="retrieval" ~ correctObject,
+      TRUE ~ NA_character_
+    ),
+    distractor = case_when(
+      screenID=="memory-resp" & correctResp=="left" ~ leftImage,
+      screenID=="memory-resp" & correctResp=="right" ~ rightImage,
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  mutate(
+    distractor = case_when(
+      screenID=="retrieval" ~ distractor[target==target][1],
+      TRUE ~ distractor
+    ),
+    .by = c(participant, blockID, trialID)
+  )
+
+Data_Exp2d %>% write_csv(file = "./data/source/Data_Exp2d.csv")
+
+Survey_Exp2d <- Raw_Exp2d %>% 
+  filter(screenID == "survey") %>% 
+  select(participant, response) %>% 
+  unnest_wider(response) %>% 
+  select(!starts_with("P0"))
+
+Survey_Exp2d %>%
+  write_csv(file = "./data/source/Survey_Exp2d.csv")
+
+```
+
+
+# Experiment 3
+
+## Download data
+```{r}
+# Download the data from JATOS
+Metadata_Exp3a <- get_JATOS_data(
+  token = "jap_bQ7jROzehBh7WTt0I2CrjLJyBZIUIfkd5079d",
+  url = "https://coglab.xyz/jatos/api/v1/results",
+  batchId = c(1553),
+  dataPath = "./raw_data/Data_Exp3a/"
+)
+
+Metadata_Exp3b <- get_JATOS_data(
+  token = "jap_bQ7jROzehBh7WTt0I2CrjLJyBZIUIfkd5079d",
+  url = "https://coglab.xyz/jatos/api/v1/results",
+  batchId = c(1551),
+  dataPath = "./raw_data/Data_Exp3b/"
+)
+
+```
+
+## Retrieve data
+```{r}
+
+Metadata_Exp3a <- read_metaData("./raw_data/Data_Exp3a/metadata.json") %>%
+  filter(studyState == "FINISHED",!is.na(file)) %>% 
+  extract_data_info("participant") %>% 
+  mutate(group  = "groupC") %>% 
+  slice(1:50)
+
+Metadata_Exp3b <- read_metaData("./raw_data/Data_Exp3b/metadata.json") %>%
+  filter(studyState == "FINISHED",!is.na(file)) %>%
+  extract_data_info("participant") %>% 
+  mutate(group = "groupD") %>% 
+  slice(1:50)
+
+Metadata_Exp3_filtered <- bind_rows(Metadata_Exp3a, Metadata_Exp3b)
+
+Group_info <- Metadata_Exp3_filtered %>% 
+  select(participant, group)
+
+Raw_Exp3 <- read_json_data(Metadata_Exp3_filtered$file) %>% 
+  left_join(Group_info) %>% 
+  group_by(participant) %>% 
+  mutate(participant = cur_group_id()) %>% 
+  ungroup()
+
+Data_Exp3 <- Raw_Exp3 %>%
+  filter(blockID > 0, screenID %in% c("processing", "memory-resp", "retrieval")) %>% 
+  select(participant, group, blockID, trialID, condition, screenID, 
+         leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
+         response, acc, rt) %>% 
+  rename(correctResp=correctJudge) %>% 
+  mutate(response = as.character(response)) %>% 
+  mutate(
+    target = case_when(
+      screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
+      screenID=="memory-resp" & rightColor=="#FFFFFF" ~ leftImage,
+      screenID=="retrieval" ~ correctObject,
+      TRUE ~ NA_character_
+    ),
+    distractor = case_when(
+      screenID=="memory-resp" & correctResp=="left" ~ leftImage,
+      screenID=="memory-resp" & correctResp=="right" ~ rightImage,
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  mutate(
+    distractor = case_when(
+      screenID=="retrieval" ~ distractor[target==target][1],
+      TRUE ~ distractor
+    ),
+    .by = c(participant, blockID, trialID)
+  )
+
+Data_Exp3 %>% write_csv(file = "./data/source/Data_Exp3.csv")
+
+Survey_Exp3 <- Raw_Exp3 %>% 
+  filter(screenID == "survey") %>% 
+  select(participant, response) %>% 
+  unnest_wider(response) %>% 
+  select(!starts_with("P0"))
+
+Survey_Exp3 %>%
+  write_csv(file = "./data/source/Survey_Exp3.csv")
+
+```
+
+

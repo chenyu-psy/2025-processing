@@ -1,0 +1,371 @@
+---
+title: "Processing Exp 2c"
+author: "Chenyu Li"
+format: html
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+# 1 Initial setting
+
+## 1.1 Clear workspace and set default colors
+
+```{r reset, include=FALSE}
+# Clear all plots and variables from workspace
+graphics.off()
+rm(list=ls(all.names=TRUE))
+
+# Set numerical precision and color schemes
+options(digits = 3)
+options(ggplot2.discrete.colour= c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A"))
+options(ggplot2.discrete.fill= c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A"))
+```
+
+## 1.2 Import functions and packages
+
+```{r}
+# Install and load required packages
+packages = c(
+  # CRAN packages for data analysis and visualization
+  "tidyverse", "brms", "bmm", "ggpubr", "tidybayes", "emmeans", "bayestestR",
+  # Github packages for specialized functions
+  "chenyu-psy/smartr@v0.3.2"
+)
+process_packages(packages, quietly = TRUE)
+
+# Source all local R functions from the functions directory
+# load_functions("./functions")
+
+# Set default ggplot theme
+theme_set(theme_bw())
+
+# Define position dodge constants for plotting
+dodge1 = position_dodge(.1)
+dodge2 = position_dodge(.2)
+
+# Define task name and directory paths
+task <- "CL_model"
+model_path <- str_glue("./models/models_{task}/")
+sample_path <- str_glue("./samples/sample_{task}/")
+figure_path <- str_glue("./figures/figures_{task}/")
+
+# Create directories if they don't exist
+dir.create(file.path(model_path), showWarnings = FALSE)
+dir.create(file.path(sample_path), showWarnings = FALSE)
+dir.create(file.path(figure_path), showWarnings = FALSE)
+
+```
+
+# 2 Process data
+
+## 2.1 Import data
+
+```{r}
+Raw_load_Exp1 <- read_rds("./data/processed/Data_Exp1b_load.rds")
+Raw_load_Exp2 <- read_rds("./data/processed/Data_Exp2d_load.rds")
+Raw_Load_Exp3 <- read_rds("./data/processed/Data_Exp3_load.rds")
+
+```
+
+## 2.2 Process data
+
+```{r}
+
+# Experiment 1
+
+Data_Load_Exp1_acc <- Raw_load_Exp1 %>% 
+  agg_plot(y = acc, within = c(condition), group = participant) %>% 
+  select(condition, mean, ci) %>% 
+  rename(acc = mean, acc_ci = ci)
+
+Data_Load_Exp1_load <- Raw_load_Exp1 %>% 
+  agg_plot(y = load,  within = c(condition), group = participant) %>% 
+  select(condition, mean, ci) %>% 
+  rename(load = mean, load_ci = ci)
+
+Data_Load_Exp1 <- left_join(Data_Load_Exp1_acc, Data_Load_Exp1_load)
+
+# Experiment 2
+
+Data_Load_Exp2_acc <- Raw_load_Exp2 %>% 
+  agg_plot(y = acc, within = c(condition), group = participant) %>% 
+  select(condition, mean, ci) %>% 
+  rename(acc = mean, acc_ci = ci)
+
+Data_Load_Exp2_load <- Raw_load_Exp2 %>%
+  agg_plot(y = load,  within = c(condition), group = participant) %>% 
+  select(condition, mean, ci) %>% 
+  rename(load = mean, load_ci = ci)
+
+Data_Load_Exp2 <- left_join(Data_Load_Exp2_acc, Data_Load_Exp2_load)
+# Experiment 3
+
+Data_Load_Exp3_acc <- Raw_Load_Exp3 %>% 
+  agg_plot(y = acc, between = group, within = c(condition), group = participant) %>% 
+  select(group, condition, mean, ci) %>% 
+  rename(acc = mean, acc_ci = ci)
+
+Data_Load_Exp3_load <- Raw_Load_Exp3 %>%
+  agg_plot(y = load, between = group, within = c(condition), group = participant) %>% 
+  select(group, condition, mean, ci) %>% 
+  rename(load = mean, load_ci = ci)
+
+Data_Load_Exp3 <- left_join(Data_Load_Exp3_acc, Data_Load_Exp3_load)
+
+```
+
+
+# 3 Visualize data
+
+## 3.1 Experiment 1
+
+```{r}
+
+Plot_CL_Exp1 <- Data_Load_Exp1 %>% 
+  mutate(group = "none") %>% 
+  ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
+  geom_line(color = "grey", linewidth=1) +
+  geom_function(
+    fun = function(x, b0, b1) return(b0 + b1 * x),
+    args = list(b0 = 0.87, b1 = -0.59),
+    color = "grey", linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  geom_errorbar(
+    aes(ymin = acc - acc_ci, ymax = acc + acc_ci),
+    linewidth = 0.8, width = 0) +
+  geom_errorbar(
+    aes(xmin = load - load_ci, xmax = load + load_ci),
+    linewidth = 0.8,  orientation = "y", width = 0) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group) +
+  labs(
+    title = "Experiment 1",
+    tag = "A",
+    x = "Cognitive load", 
+    y = "Proportion of correct",
+    color = "Condition") +
+  coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
+  scale_color_manual(values = c("#FF7F6F","#2F7FC1","#FFBE7A")) +
+  theme(
+    strip.text = element_text(color = "#bababa"),
+    strip.background = element_rect(fill = "#bababa"),
+    axis.text = element_text(size = 10.5),
+    axis.title = element_text(size = 10.5)
+  )
+
+
+```
+
+## 3.2 Experiment 2
+
+```{r}
+
+Plot_CL_Exp2 <- Data_Load_Exp2 %>% 
+  mutate(group = "none") %>% 
+  ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
+  geom_function(
+    fun = function(x, b0, b1) return(b0 + b1 * x),
+    args = list(b0 = 0.75, b1 = -0.42),
+    color = "grey", linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  geom_line(color = "grey", linewidth=1) +
+  geom_errorbar(
+    aes(ymin = acc - acc_ci, ymax = acc + acc_ci),
+    linewidth = 0.8, width = 0) +
+  geom_errorbar(
+    aes(xmin = load - load_ci, xmax = load + load_ci),
+    linewidth = 0.8,  orientation = "y", width = 0) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group) +
+  labs(
+    title = "Experiment 2",
+    tag = "B",
+    x = "Cognitive load", 
+    y = "Proportion of correct",
+    color = "Condition") +
+  coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
+  scale_color_manual(values = c("#FF7F6F","#21597B","#FFBE7A")) +
+  theme(
+    strip.text = element_text(color = "#bababa"),
+    strip.background = element_rect(fill = "#bababa"),
+    axis.text = element_text(size = 10.5),
+    axis.title = element_text(size = 10.5)
+  )
+
+
+```
+
+
+## 3.3 Experiment 3
+```{r}
+
+abline_data <- data.frame(
+  group = c("C group", "D group"),
+  b0    = c(0.66, 0.76),  # Intercepts
+  b1    = c(-0.13, -0.41) # Slopes
+)
+
+Plot_CL_Exp3 <- Data_Load_Exp3 %>% 
+  mutate(group = factor(
+    group, 
+    levels = c("groupC", "groupD"),
+    labels = c("C group", "D group"))
+  ) %>%
+  ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
+  geom_abline(
+    data = abline_data, 
+    aes(intercept = b0, slope = b1), 
+    color = "grey", linetype = "dashed", linewidth = 0.8
+  ) +
+  geom_line(color = "grey", linewidth=1) +
+  geom_errorbar(
+    aes(ymin = acc - acc_ci, ymax = acc + acc_ci),
+    linewidth = 0.8, width = 0) +
+  geom_errorbar(
+    aes(xmin = load - load_ci, xmax = load + load_ci),
+    linewidth = 0.8,  orientation = "y", width = 0) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group, scales = "free_x") +
+  labs(
+    title = "Experiment 3",
+    tag = "C",
+    x = "Cognitive load", 
+    y = "Proportion of correct",
+    color = "Condition") +
+  coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
+  scale_color_manual(values = c("B"="#FF7F6F","C1"="#2F7FC1", "C2"="#21597B","D1"="#FFBE7A","D2"="#FF7F00")) +
+  theme(
+    strip.text = element_text(size=10.5),
+    strip.background = element_rect(fill = "#bababa"),
+    axis.text = element_text(size = 10.5),
+    axis.title = element_text(size = 10.5)
+  )
+
+```
+
+## 3.4 Combine and save plots
+
+```{r}
+
+Plot_cognitive_load <- ggarrange(
+  Plot_CL_Exp1, Plot_CL_Exp2, Plot_CL_Exp3,
+  common.legend = TRUE, legend = "right", legend.grob = get_legend(Plot_CL_Exp3),
+  ncol = 3, nrow = 1, widths = c(1.3, 1.3, 2.3)
+)
+
+
+ggsave(
+  filename = str_glue("{figure_path}Plot_cognitiveLoad.pdf"),
+  plot = Plot_cognitive_load,
+  bg = "white",
+  width = 10, height = 4)
+
+```
+
+# 4 Analyze data
+
+## 4.1 Data preparation
+
+```{r}
+
+mData_Load <- bind_rows(
+  Raw_load_Exp1 %>% mutate(exp = "Exp1", participant = factor(participant + 100)), 
+  Raw_load_Exp2 %>% mutate(exp = "Exp2", participant = factor(participant + 200)),
+  Raw_Load_Exp3 %>% mutate(
+    exp = ifelse(
+      group == "groupC", "Exp3_C", "Exp3_D"
+    ),
+    participant = factor(participant + 300)
+  )) %>% 
+  select(-condition, -group)
+
+```
+
+## 4.2 formula
+
+```{r}
+
+normalized_sigmoid <- function(x, a1 = 0.0833, a2, b, s) {
+  # 1. Calculate the raw logistic values
+  raw_y <- 1 / (1 + exp(b * (x - s)))
+  
+  # 2. Calculate the values at the endpoints (0 and 1)
+  y_at_0 <- 1 / (1 + exp(b * (0 - s)))
+  y_at_1 <- 1 / (1 + exp(b * (1 - s)))
+  
+  # 3. Normalize (Rescale) so x=0 is y=1 and x=1 is y=0
+  # This formula stretches the curve to fit the box exactly
+  normalized_y <- a1 + (a2-a1) *(raw_y - y_at_1) / (y_at_0 - y_at_1)
+  
+  return(normalized_y)
+} 
+
+curve_params <- data.frame(
+  name = c("Experiment 1", "Experiment 2", "Experiment 3 (C group)", "Experiment 3 (D group)"),
+  a2 = c(plogis(2.96), plogis(-0.64), plogis(-0.05), plogis(0.45)),
+  s  = c(plogis(-0.44), plogis(0.20), plogis(0.34), plogis(-0.19)),
+  b  = c(exp(3.10), exp(5.08), exp(5.54), exp(5.75)),
+  color = c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A") # Optional: Assign colors here
+)
+
+ggplot() +
+  coord_cartesian(ylim = c(0, 1), xlim = c(0, 1)) +
+  
+  # Use lapply to loop through the rows of the data frame
+  lapply(1:nrow(curve_params), function(i) {
+    
+    # Extract row parameters
+    row <- curve_params[i, ]
+    
+    geom_function(
+      fun = strict_sigmoid,
+      aes(color = row$name), 
+      args = list(a2 = row$a2, s = row$s, b = row$b),
+      linewidth = 1
+    )
+  }) +
+  
+  # 4. (Optional) Use the specific colors defined in the data frame
+  scale_color_manual(
+    name = "Experiment",
+    values = setNames(curve_params$color, curve_params$name)
+  )
+
+
+
+```
+
+## 4.3 Fit model
+
+```{r}
+
+smart_runFun(
+  fun = brms::brm,
+  args = list(
+    formula = bf(acc ~ 0 + exp + exp:load + (1 | gr(participant, by = exp))),
+    data = mData_Load,
+    family = gaussian(),
+    prior = c(
+      prior(normal(0,1), class = "b"), 
+      prior(student_t(3, 0, 2), class = "sd", lb = 0)
+    ),
+    iter = 4000,
+    warmup = 2000,
+    chains = 4,
+    cores = 4,
+    backend = "cmdstanr",
+    control = list(adapt_delta = 0.95, max_treedepth = 15),
+    file = str_glue("{model_path}CL_model_exp_linear")
+  ),
+  name = "CL_model_exp_linear",
+  export = "Model_CL"
+)
+
+results <- conditional_effects(Model_CL)
+
+```
+
+

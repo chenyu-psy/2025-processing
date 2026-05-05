@@ -1,5 +1,5 @@
 ---
-title: "Processing Exp 2c"
+title: "Processing Exp2"
 author: "Chenyu Li"
 format: html
 editor: source
@@ -45,7 +45,7 @@ dodge1 = position_dodge(.1)
 dodge2 = position_dodge(.2)
 
 # Define task name and directory paths
-task <- "Exp2d"
+task <- "Exp2"
 model_path <- str_glue("./models/models_{task}/")
 sample_path <- str_glue("./samples/sample_{task}/")
 figure_path <- str_glue("./figures/figures_{task}/")
@@ -699,5 +699,4 @@ bf_pairwise(Model_memory_Correct,
             cont_values = list(order = c(0, 1)))
 
 ```
-
 

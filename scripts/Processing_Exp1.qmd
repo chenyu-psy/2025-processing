@@ -1,5 +1,5 @@
 ---
-title: "Processing Exp2"
+title: "Processing Exp1"
 author: "Chenyu Li"
 format: html
 editor: source
@@ -47,7 +47,7 @@ dodge1 = position_dodge(.1)
 dodge2 = position_dodge(.2)
 
 # Define task name and directory paths
-task <- "Exp1b"
+task <- "Exp1"
 model_path <- str_glue("./models/models_{task}/")
 sample_path <- str_glue("./samples/sample_{task}/")
 figure_path <- str_glue("./figures/figures_{task}/")
@@ -602,4 +602,3 @@ bf_parameters(Model_memory_Correct)
       simple      |    0.139
       judge       |     1.00
       distractor  | 1.05e+04
-

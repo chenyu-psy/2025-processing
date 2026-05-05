@@ -63,8 +63,8 @@ dir.create(file.path(figure_path), showWarnings = FALSE)
 ## 2.1 Import data
 
 ```{r}
-Raw_load_Exp1 <- read_rds("./data/processed/Data_Exp1b_load.rds")
-Raw_load_Exp2 <- read_rds("./data/processed/Data_Exp2d_load.rds")
+Raw_load_Exp1 <- read_rds("./data/processed/Data_Exp1_load.rds")
+Raw_load_Exp2 <- read_rds("./data/processed/Data_Exp2_load.rds")
 Raw_Load_Exp3 <- read_rds("./data/processed/Data_Exp3_load.rds")
 
 ```
@@ -374,5 +374,4 @@ smart_runFun(
 results <- conditional_effects(Model_CL)
 
 ```
-
 

@@ -126,7 +126,7 @@ Data_Exp1b <- Raw_Exp1b %>%
     .by = c(participant, blockID, trialID)
   )
 
-Data_Exp1b %>% write_csv(file = "./data/source/Data_Exp1b.csv")
+Data_Exp1b %>% write_csv(file = "./data/source/Data_Exp1.csv")
 
 Survey_Exp1b <- Raw_Exp1b %>% 
   filter(screenID == "survey") %>% 
@@ -135,7 +135,7 @@ Survey_Exp1b <- Raw_Exp1b %>%
   select(!starts_with("P0"))
 
 Survey_Exp1b %>%
-  write_csv(file = "./data/source/Survey_Exp1b.csv")
+  write_csv(file = "./data/source/Survey_Exp1.csv")
 
 ```
 
@@ -414,7 +414,7 @@ Data_Exp2d <- Raw_Exp2d %>%
     .by = c(participant, blockID, trialID)
   )
 
-Data_Exp2d %>% write_csv(file = "./data/source/Data_Exp2d.csv")
+Data_Exp2d %>% write_csv(file = "./data/source/Data_Exp2.csv")
 
 Survey_Exp2d <- Raw_Exp2d %>% 
   filter(screenID == "survey") %>% 
@@ -423,7 +423,7 @@ Survey_Exp2d <- Raw_Exp2d %>%
   select(!starts_with("P0"))
 
 Survey_Exp2d %>%
-  write_csv(file = "./data/source/Survey_Exp2d.csv")
+  write_csv(file = "./data/source/Survey_Exp2.csv")
 
 ```
 
@@ -515,5 +515,4 @@ Survey_Exp3 %>%
   write_csv(file = "./data/source/Survey_Exp3.csv")
 
 ```
-
 

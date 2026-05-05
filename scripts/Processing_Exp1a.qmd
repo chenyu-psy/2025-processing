@@ -198,9 +198,13 @@ Plot_judge_RT <- Data_Judge %>%
 )
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_{task}_judgement.pdf"),
+  path = figure_path,
+  filename = str_glue("Plot_{task}_judgement.png"),
   plot = Plot_juadgement,
-  width = 8, height = 4)
+  width = 8,
+  height = 4,
+  dpi = 300,
+  bg = "white")
 
 ```
 
@@ -264,9 +268,13 @@ theme(
 )
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_{task}_response.pdf"),
+  path = figure_path,
+  filename = str_glue("Plot_{task}_response.png"),
   plot = Plot_response,
-  width = 10, height = 4)
+  width = 10,
+  height = 4,
+  dpi = 300,
+  bg = "white")
 
 ```
 
@@ -707,9 +715,13 @@ scale_inidividual_facet_y_axes(
 Plot_M3_Rec <- ggarrange(Plot_M3_Rec_Con, Plot_M3_Rec_Seq, ncol = 1)
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_{task}_M3_predict.pdf"),
-  plot = Plot_M3_Rec, width = 12, height =7
-)
+  path = figure_path,
+  filename = str_glue("Plot_{task}_M3_predict.png"),
+  plot = Plot_M3_Rec,
+  width = 12,
+  height = 7,
+  dpi = 300,
+  bg = "white")
 
 ```
 
@@ -971,11 +983,13 @@ Plot_BF_heatmap <- bind_rows(Table_BF_CON, Table_BF_SEQ) %>%
   )
   
 ggsave(
-  plot = Plot_BF_heatmap,
   path = figure_path,
-  filename = str_glue("Plot_{task}_M3_filtering_BF_heatmap.pdf"),
-  width = 8, height = 4
-)
+  filename = str_glue("Plot_{task}_M3_filtering_BF_heatmap.png"),
+  plot = Plot_BF_heatmap,
+  width = 8,
+  height = 4,
+  dpi = 300,
+  bg = "white")
 
 
 ```
@@ -1004,7 +1018,6 @@ Post_M3 <- bind_rows(Post_M3_CON, Post_M3_SEQ) %>%
 Post_M3 %>% write_csv(str_glue('./figures/figures_Data/Post_{task}_filtering.csv'))
 
 ```
-
 
 
 

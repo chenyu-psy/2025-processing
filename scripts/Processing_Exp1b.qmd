@@ -3,7 +3,7 @@ title: "Processing Exp2"
 author: "Chenyu Li"
 format: html
 editor: source
-editor_options: 
+editor_options:
   chunk_output_type: console
 ---
 
@@ -30,13 +30,14 @@ packages = c(
   # CRAN packages for data analysis and visualization
   "tidyverse", "brms", "ggpubr", "tidybayes", "emmeans", "bayestestR",
   # Github packages for specialized functions
-  "chenyu-psy/smartr@v0.3.1", 
+  "chenyu-psy/smartr@v0.3.1",
+  "chenyu-psy/taskr@v0.2.0",
   "venpopov/bmm"
 )
 process_packages(packages, quietly = TRUE)
 
-# Source all local R functions from the functions directory
-# load_functions("./functions")
+# Source helper for readable condition labels in figures
+source("./functions/factor_condition.R")
 
 # Set default ggplot theme
 theme_set(theme_bw())
@@ -51,10 +52,19 @@ model_path <- str_glue("./models/models_{task}/")
 sample_path <- str_glue("./samples/sample_{task}/")
 figure_path <- str_glue("./figures/figures_{task}/")
 
+
 # Create directories if they don't exist
 dir.create(file.path(model_path), showWarnings = FALSE)
 dir.create(file.path(sample_path), showWarnings = FALSE)
 dir.create(file.path(figure_path), showWarnings = FALSE)
+
+# Run one background model-fitting task at a time so long Stan jobs are easy to monitor.
+taskr::init_queue(max_slots = 1)
+
+run_brm_task <- function(...) {
+  brm(...)
+  TRUE
+}
 
 ```
 
@@ -64,11 +74,11 @@ dir.create(file.path(figure_path), showWarnings = FALSE)
 
 ```{r}
 
-Raw_data <- str_glue("./data/source/Data_{task}.csv") %>% 
-  read_csv() %>% 
+Raw_data <- str_glue("./data/source/Data_{task}.csv") %>%
+  read_csv() %>%
   mutate(condition = factor(condition, levels = c("A", "B","C","D")))
 
-Survey_data <- str_glue("./data/source/Survey_{task}.csv") %>% 
+Survey_data <- str_glue("./data/source/Survey_{task}.csv") %>%
   read_csv()
 
 ```
@@ -77,8 +87,8 @@ Survey_data <- str_glue("./data/source/Survey_{task}.csv") %>%
 
 ```{r}
 
-excluding_aid_dist <- Survey_data %>% 
-  filter(str_detect(aid,"Yes") | str_detect(attention,"Yes")) %>% 
+excluding_aid_dist <- Survey_data %>%
+  filter(str_detect(aid,"Yes") | str_detect(attention,"Yes")) %>%
   pull(participant)
 
 message(str_glue("Excluded {length(excluding_aid_dist)} participants due to distraction or using aids."))
@@ -89,22 +99,22 @@ message(str_glue("Excluded {length(excluding_aid_dist)} participants due to dist
 
 ```{r}
 
-excluding_lowAcc <- Raw_data %>% 
-  filter(!participant %in% excluding_aid_dist) %>% 
-  filter(screenID == "memory-resp",condition!="A") %>% 
+excluding_lowAcc <- Raw_data %>%
+  filter(!participant %in% excluding_aid_dist) %>%
+  filter(screenID == "memory-resp",condition!="A") %>%
   mutate(
     response = ifelse(response=="NULL", NA, response),
     acc = case_when(
       is.na(response) ~ NA,
       acc ~ 1,
       TRUE ~ 0)
-    ) %>% 
+    ) %>%
   summarise(
     pResp = sum(!is.na(response), na.rm = T)/n(),
     pAcc = mean(acc, na.rm = T),
     .by = c(participant)
-  ) %>% 
-  filter((pResp < 0.5 | pAcc < 0.7)) %>% 
+  ) %>%
+  filter((pResp < 0.5 | pAcc < 0.7)) %>%
   pull(participant)
 
 message(str_glue("Excluded {length(excluding_lowAcc)} participants due to a low accuracy in the size judgement task"))
@@ -119,17 +129,17 @@ message(str_glue("Excluded {length(excluding_list)} participants in total"))
 ### 2.6.1 Size judgement task
 ```{r}
 
-Data_Processing_Judge <- Raw_data %>% 
-  filter(screenID=="processing", !participant %in% excluding_list) %>% 
+Data_Processing_Judge <- Raw_data %>%
+  filter(screenID=="processing", !participant %in% excluding_list) %>%
   mutate(
     RT = rt/1000,
     phase = "processing",
     trialID = as.numeric(str_remove(trialID, "P"))
-  ) %>% 
+  ) %>%
   select(participant, blockID, trialID, condition, phase, correctResp, acc, RT)
 
-Data_Memory_Judge <- Raw_data %>% 
-  filter(screenID=="memory-resp", !participant %in% excluding_list) %>% 
+Data_Memory_Judge <- Raw_data %>%
+  filter(screenID=="memory-resp", !participant %in% excluding_list) %>%
   mutate(
     target = ifelse(leftImage=="image26", rightImage, leftImage),
     RT = rt/1000,
@@ -138,10 +148,10 @@ Data_Memory_Judge <- Raw_data %>%
   ) %>%
   select(participant, blockID, trialID, condition, phase, correctResp, target, acc, RT)
 
-Data_Judge <- bind_rows(Data_Processing_Judge, Data_Memory_Judge) %>% 
-  arrange(participant, blockID, trialID, condition, phase, correctResp) %>% 
-  filter(condition!="A") %>% 
-  mutate(phase = factor(phase, levels = c("processing", "memory"), labels = c("Processing", "Memory + Processing"))) %>% 
+Data_Judge <- bind_rows(Data_Processing_Judge, Data_Memory_Judge) %>%
+  arrange(participant, blockID, trialID, condition, phase, correctResp) %>%
+  filter(condition!="A") %>%
+  mutate(phase = factor(phase, levels = c("processing", "memory"), labels = c("Processing", "Memory + Processing"))) %>%
   mutate(
     RT = case_when(
       RT < 0.2 ~ NA,
@@ -159,36 +169,36 @@ write_rds(Data_Judge, str_glue("./data/processed/Data_{task}_Judge.rds"))
 ### 2.6.2 Memory task
 
 ```{r}
-Data_Ret <- Raw_data %>% 
+Data_Ret <- Raw_data %>%
   filter(
-    screenID == "retrieval", 
+    screenID == "retrieval",
     !participant %in% excluding_list
-    ) %>% 
+    ) %>%
   mutate(
     step = rank(trialID, ties.method = "first"),
     .by = c(participant, blockID, trialID)
-  ) %>% 
-  select(participant, blockID, trialID, condition, step, target, distractor, response) %>% 
+  ) %>%
+  select(participant, blockID, trialID, condition, step, target, distractor, response) %>%
   mutate(trialID = as.numeric(trialID)) %>%
   left_join(
-    Data_Memory_Judge %>% 
-      select(participant, blockID, trialID, target, acc, RT) %>% 
+    Data_Memory_Judge %>%
+      select(participant, blockID, trialID, target, acc, RT) %>%
       rename(judge_acc = acc, judge_RT = RT)
-  ) %>% 
+  ) %>%
   mutate(
     Correct = ifelse(target==response, 1, 0),
     noRes = ifelse(response=="NULL", 1, 0)
-  ) %>% 
+  ) %>%
   mutate(
     Dist = ifelse(response==distractor, 1, 0),
     OtherDist = ifelse(Dist==0 & response %in% distractor, 1, 0),
     .by = c(participant, blockID, trialID, condition)
-  ) %>% 
+  ) %>%
   mutate(
     Other = ifelse(Correct==0 & response %in% target, 1, 0),
     NPL = 1 - Correct - Other - noRes,
     .by = c(participant, blockID, trialID, condition)
-  ) %>% 
+  ) %>%
   mutate(
     order = ifelse(condition == first(condition), 0, 1),
     .by = participant
@@ -203,7 +213,7 @@ write_rds(Data_Ret, str_glue("./data/processed/Data_{task}_Ret.rds"))
 
 ```{r}
 
-Data_Trial_Acc <- Data_Ret %>% 
+Data_Trial_Acc <- Data_Ret %>%
   summarise(
     acc = mean(Correct, na.rm = TRUE),
     correct = sum(Correct, na.rm = TRUE),
@@ -211,7 +221,7 @@ Data_Trial_Acc <- Data_Ret %>%
     .by = c(participant, condition)
   )
 
-Data_Trial_Load <- Data_Judge %>% 
+Data_Trial_Load <- Data_Judge %>%
   filter(
     phase=="Processing",
     trialID > 15) %>%
@@ -220,8 +230,8 @@ Data_Trial_Load <- Data_Judge %>%
     .by = c(participant, condition)
   )
 
-Data_Load <- Data_Trial_Acc %>% 
-  left_join(Data_Trial_Load, by = c("participant", "condition")) %>% 
+Data_Load <- Data_Trial_Acc %>%
+  left_join(Data_Trial_Load, by = c("participant", "condition")) %>%
   filter(condition!="A",!is.na(load))
 
 # Save the processed data
@@ -235,15 +245,16 @@ write_rds(Data_Load, str_glue("./data/processed/Data_{task}_load.rds"))
 
 ```{r}
 
-Plot_Judge_RT_trials <- Data_Judge %>% 
+Plot_Judge_RT_trials <- Data_Judge %>%
   filter(acc==1) %>%
   agg_plot(y = RT, within = c(condition, phase, trialID), group = participant) %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = trialID, y = mean, color = phase, fill = phase)) +
   geom_smooth(method = "loess", se = TRUE)+
-  facet_wrap(~ condition, labeller = labeller(condition = ~paste0("Condition ", .)))+
+  facet_wrap(~ condition)+
   ylim(0,2)+
   labs(
-    y = "Reaction time (s)", 
+    y = "Reaction time (s)",
     x = "Trial",
     color = "Phase",
     fill = "Phase")+
@@ -255,9 +266,13 @@ Plot_Judge_RT_trials <- Data_Judge %>%
   )
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_{task}_RT_trials.pdf"),
+  path = figure_path,
+  filename = str_glue("Plot_{task}_RT_trials.png"),
   plot = Plot_Judge_RT_trials,
-  width = 10, height = 4)
+  width = 10,
+  height = 4,
+  dpi = 300,
+  bg = "white")
 
 ```
 
@@ -266,8 +281,9 @@ ggsave(
 
 ```{r}
 
-Plot_juadg_Acc <- Data_Judge %>% 
+Plot_juadg_Acc <- Data_Judge %>%
   agg_plot(y = acc, within = c(condition, phase), group = participant) %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = condition, y = mean, fill = phase)) +
   geom_errorbar(aes(ymin = mean-ci, ymax = mean+ci), width = 0.1, position = dodge2)+
   geom_point(shape = 23, size = 3, position = dodge2)+
@@ -275,7 +291,7 @@ Plot_juadg_Acc <- Data_Judge %>%
   scale_color_manual(values = c("#FFBE7A","#8FC0A9")) +
   scale_fill_manual(values = c("#FFBE7A","#8FC0A9")) +
   labs(
-    y = "Proportion of correct", 
+    y = "Proportion of correct",
     x = "Condition", fill = "Trial type",
     title = "Accuracy",
     tag = "A")+
@@ -284,9 +300,10 @@ Plot_juadg_Acc <- Data_Judge %>%
   )
 
 
-Plot_judge_RT <- Data_Judge %>% 
+Plot_judge_RT <- Data_Judge %>%
   filter(acc==1) %>%
   agg_plot(y = RT, within = c(condition, phase), group = participant) %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = condition, y = mean, fill = phase)) +
   geom_errorbar(aes(ymin = mean-ci, ymax = mean+ci), width = 0.1, position = dodge2)+
   geom_point(shape = 23, size = 3, position = dodge2)+
@@ -294,8 +311,8 @@ Plot_judge_RT <- Data_Judge %>%
   scale_color_manual(values = c("#FFBE7A","#8FC0A9")) +
   scale_fill_manual(values = c("#FFBE7A","#8FC0A9")) +
   labs(
-    y = "Reaction time (s)", 
-    x = "Condition", 
+    y = "Reaction time (s)",
+    x = "Condition",
     fill = "Trial type",
     title = "Reaction time",
     tag = "B")+
@@ -310,9 +327,13 @@ Plot_judge_RT <- Data_Judge %>%
 )
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_{task}_judgement.pdf"),
+  path = figure_path,
+  filename = str_glue("Plot_{task}_judgement.png"),
   plot = Plot_juadgement,
-  width = 8, height = 4)
+  width = 8,
+  height = 4,
+  dpi = 300,
+  bg = "white")
 
 ```
 
@@ -321,14 +342,15 @@ ggsave(
 
 ```{r}
 
-Plot_Resp_correct <- Data_Ret %>% 
+Plot_Resp_correct <- Data_Ret %>%
   agg_plot(y = Correct, within = condition, group = participant) %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = condition, y = mean, fill=condition)) +
   geom_errorbar(aes(ymin = mean-ci, ymax = mean+ci), width = .1, position = dodge2)+
   geom_point(shape = 23, size = 3, position = dodge2)+
   ylim(0.3,0.8)+
   labs(
-    y = "Proportion of response", 
+    y = "Proportion of response",
     x = "Condition")+
   scale_fill_manual(values = c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A")) +
   theme(
@@ -337,26 +359,31 @@ Plot_Resp_correct <- Data_Ret %>%
   )
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_{task}_response.pdf"),
+  path = figure_path,
+  filename = str_glue("Plot_{task}_response.png"),
   plot = Plot_Resp_correct,
-  width = 3, height = 3.5)
+  width = 3,
+  height = 3.5,
+  dpi = 300,
+  bg = "white")
 
 ```
 
 ## Plot serial position curve on memory task
 ```{r}
 
-Plot_Resp_correct_serialPos <- Data_Ret %>% 
+Plot_Resp_correct_serialPos <- Data_Ret %>%
   agg_plot(y = Correct, within = c(condition, step), group = participant) %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = step, y = mean, color = condition, fill=condition)) +
   geom_line(linewidth=1, position = dodge2)+
   geom_errorbar(
-    aes(ymin = mean-ci, ymax = mean+ci), 
+    aes(ymin = mean-ci, ymax = mean+ci),
     linewidth = 0.8, width = .1, position = dodge2)+
   geom_point(shape = 23, size = 3, position = dodge2)+
   ylim(0.3,0.8)+
   labs(
-    y = "Proportion of response", 
+    y = "Proportion of response",
     x = "Serial position",
     color = "Condition",
     fill = "Condition")+
@@ -368,14 +395,15 @@ Plot_Resp_correct_serialPos <- Data_Ret %>%
   )
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_{task}_serialPosition.pdf"),
+  path = figure_path,
+  filename = str_glue("Plot_{task}_serialPosition.png"),
   plot = Plot_Resp_correct_serialPos,
-  width = 6, height = 4)
+  width = 6,
+  height = 4,
+  dpi = 300,
+  bg = "white")
 
 ```
-
-
-
 
 # 4 Model fitting
 
@@ -383,30 +411,32 @@ ggsave(
 
 ### 4.1.1 Accuracy
 
-#### Model fitting
+#### data
 
 ```{r}
-
-mData_judge_correct <- Data_Judge %>% 
+mData_judge_correct <- Data_Judge %>%
   summarise(
     score = sum(acc),
     nRet = n(),
     .by = c(participant, condition)
-    ) %>% 
+    ) %>%
   mutate(
     condition = factor(condition)
   )
 
-contrasts(mData_judge_correct$condition) = bayestestR::contr.equalprior(n = 2)
+contrasts(mData_judge_correct$condition) = bayestestR::contr.equalprior(n = 3)
+```
 
+#### Model fitting
 
-smart_runFun(
-  fun = brm,
+```{r}
+taskr::submit_task(
+  fun = brms::brm,
   args = list(
     formula = score | trials(nRet) ~ 1 + condition + (1 + condition | participant),
     data = mData_judge_correct,
     family = binomial(),
-    prior = c(prior(normal(0,1), class = "b"), 
+    prior = c(prior(normal(0,1), class = "b"),
               prior(student_t(3, 0, 2), class = "sd", lb = 0)),
     chains = 8,
     iter = 10000,
@@ -417,9 +447,9 @@ smart_runFun(
     save_pars = save_pars(all = TRUE),
     file = str_glue("{model_path}Model_{task}_judge_Correct")
   ),
-  name = str_glue("Model_{task}_judge_Correct"),
+  label = str_glue("Model_{task}_judge_Correct"),
+  output = "none"
 )
-
 
 ```
 
@@ -428,56 +458,63 @@ smart_runFun(
 
 Model_judge_Correct <- readRDS(str_glue("{model_path}Model_{task}_judge_Correct.rds"))
 
-smart_runFun(
+taskr::submit_task(
   fun = unupdate,
   args = list(model = Model_judge_Correct),
-  name = str_glue("Prior_{task}_judge_Correct"),
-  export = "Prior_judge_Correct"
+  label = str_glue("Prior_{task}_judge_Correct"),
+  output = "all"
 )
 
-# The set-size effect
-bf_pairwise(
-  Model_judge_Correct, Prior_judge_Correct, 
-  specs = c(~ condition))
+Prior_judge_Correct <- taskr::get_task_result(str_glue("Prior_{task}_judge_Correct"))
 
-# contrast         |       BF
-# ---------------------------
-# complex - simple | 5.18e+07
+bf_pairwise(
+  Model_judge_Correct, Prior_judge_Correct,
+  specs = c(~ condition))
 
 ```
 
-
+      contrast |       BF
+      -------------------
+      B - C    | 2.08e+13
+      B - D    | 1.44e+16
+      C - D    |     8.19
 
 ### 4.1.3 Reaction time
+
+#### Data
+
+```{r}
+mData_judge_RT <- Data_Judge %>%
+  filter(acc==1) %>%
+  mutate(condition = factor(condition))
+
+contrasts(mData_judge_RT$condition) = bayestestR::contr.equalprior(n = 3)
+```
 
 #### Model fitting
 
 ```{r}
-mData_judge_RT <- Data_Judge %>% 
-  filter(acc==1) %>% 
-  mutate(condition = factor(condition))
-
-contrasts(mData_judge_RT$condition) = bayestestR::contr.equalprior(n = 2)
-
-smart_runFun(
-  fun = brm,
+taskr::submit_task(
+  fun = brms::brm,
   args = list(
     formula = RT ~ 1 + condition + (1 + condition | participant),
     data = mData_judge_RT,
     family = lognormal(),
-    prior = c(prior(cauchy(0, sqrt(2)/4), class = "b"), 
+    prior = c(prior(cauchy(0, sqrt(2)/4), class = "b"),
               prior(student_t(3, 0, 2), class = "sd", lb = 0)),
     chains = 8,
     iter = 10000,
     warmup = 2500,
-    cores = 8,
+    cores = 4,
     control = list(adapt_delta = 0.95, max_treedepth = 15),
     save_pars = save_pars(all = TRUE),
     backend = "cmdstanr",
     file = str_glue("{model_path}Model_{task}_judge_RT")
   ),
-  name = str_glue("Model_{task}_judge_RT"),
+  label = str_glue("Model_{task}_judge_RT"),
+  output = "none"
 )
+
 ```
 
 #### Bayes Factor
@@ -485,73 +522,84 @@ smart_runFun(
 
 Model_judge_RT <- readRDS(str_glue("{model_path}Model_{task}_judge_RT.rds"))
 
-smart_runFun(
+taskr::submit_task(
   fun = unupdate,
   args = list(model = Model_judge_RT),
-  name = str_glue("Prior_{task}_judge_RT"),
-  export = "Prior_judge_RT"
+  label = str_glue("Prior_{task}_judge_RT"),
+  output = "all"
 )
+
+Prior_judge_RT <- taskr::get_task_result(str_glue("Prior_{task}_judge_RT"))
 
 
 # The processing effect
 bf_pairwise(
-  Model_judge_RT, Prior_judge_RT, 
+  Model_judge_RT, Prior_judge_RT,
   specs = ~ condition)
-
-# contrast         |    BF
-# ------------------------
-# complex - simple | 86.02
 
 ```
 
+      contrast |       BF
+      -------------------
+      B - C    | 6.98e+11
+      B - D    | 3.70e+14
+      C - D    | 1.59e+07
 
 ## 4.2 Memory task
 
 ### 4.2.1 Data
 
 ```{r}
-
-mData_Ret <- Data_Ret %>% 
-  select(participant, condition, Correct) %>% 
+mData_Ret <- Data_Ret %>%
+  select(participant, condition, Correct) %>%
   summarise(
     Resp = sum(Correct, na.rm = TRUE),
     nResp = sum(!is.na(Correct)),
     .by = c(participant, condition)
-  ) %>% 
+  ) %>%
   mutate(
     simple = ifelse(condition!="A",1, 0),
     judge = ifelse(condition %in% c("C","D"), 1, 0),
     distractor = ifelse(condition=="D",1,0)
   )
+```
 
-smart_runFun(
-  fun = brm,
+```{r}
+taskr::submit_task(
+  fun = run_brm_task,
   args = list(
     data = mData_Ret,
     formula = Resp | trials(nResp) ~ 1 + simple + judge + distractor + (1 + simple + judge + distractor | participant),
     family = binomial(),
-    prior = c(prior(normal(0,1), class = "b"), 
+    prior = c(prior(normal(0,1), class = "b"),
               prior(student_t(3, 0, 2), class = "sd", lb = 0)),
     chains = 8,
     iter = 10000,
     warmup = 2500,
-    cores = 8,
+    cores = 4,
     control = list(adapt_delta = 0.95, max_treedepth = 15),
     save_pars = save_pars(all = TRUE),
     sample_prior = "yes",
     backend = "cmdstanr",
-    file = str_glue("{model_path}Model_{task}_memory_Correct")),
-  name = str_glue("Model_{task}_memory_Correct"),
+    file = str_glue("{model_path}Model_{task}_memory_Correct")
+    ),
+  label = str_glue("Model_{task}_memory_Correct"),
+  output = "none"
 )
+```
 
+### Bayes Factor
 
+```{r}
 Model_memory_Correct <- readRDS(str_glue("{model_path}Model_{task}_memory_Correct.rds"))
 
 bf_parameters(Model_memory_Correct)
-
-bf_pairwise(Model_memory_Correct, 
-            specs = ~ condition:order,
-            cont_values = list(order = c(0, 1)))
-
 ```
+
+      Parameter   |       BF
+      ----------------------
+      (Intercept) | 6.24e+03
+      simple      |    0.139
+      judge       |     1.00
+      distractor  | 1.05e+04
 

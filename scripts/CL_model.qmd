@@ -3,7 +3,7 @@ title: "Processing Exp 2c"
 author: "Chenyu Li"
 format: html
 editor: source
-editor_options: 
+editor_options:
   chunk_output_type: console
 ---
 
@@ -34,8 +34,8 @@ packages = c(
 )
 process_packages(packages, quietly = TRUE)
 
-# Source all local R functions from the functions directory
-# load_functions("./functions")
+# Source helper for readable condition labels in figures
+source("./functions/factor_condition.R")
 
 # Set default ggplot theme
 theme_set(theme_bw())
@@ -49,6 +49,7 @@ task <- "CL_model"
 model_path <- str_glue("./models/models_{task}/")
 sample_path <- str_glue("./samples/sample_{task}/")
 figure_path <- str_glue("./figures/figures_{task}/")
+
 
 # Create directories if they don't exist
 dir.create(file.path(model_path), showWarnings = FALSE)
@@ -74,41 +75,41 @@ Raw_Load_Exp3 <- read_rds("./data/processed/Data_Exp3_load.rds")
 
 # Experiment 1
 
-Data_Load_Exp1_acc <- Raw_load_Exp1 %>% 
-  agg_plot(y = acc, within = c(condition), group = participant) %>% 
-  select(condition, mean, ci) %>% 
+Data_Load_Exp1_acc <- Raw_load_Exp1 %>%
+  agg_plot(y = acc, within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
   rename(acc = mean, acc_ci = ci)
 
-Data_Load_Exp1_load <- Raw_load_Exp1 %>% 
-  agg_plot(y = load,  within = c(condition), group = participant) %>% 
-  select(condition, mean, ci) %>% 
+Data_Load_Exp1_load <- Raw_load_Exp1 %>%
+  agg_plot(y = load,  within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
   rename(load = mean, load_ci = ci)
 
 Data_Load_Exp1 <- left_join(Data_Load_Exp1_acc, Data_Load_Exp1_load)
 
 # Experiment 2
 
-Data_Load_Exp2_acc <- Raw_load_Exp2 %>% 
-  agg_plot(y = acc, within = c(condition), group = participant) %>% 
-  select(condition, mean, ci) %>% 
+Data_Load_Exp2_acc <- Raw_load_Exp2 %>%
+  agg_plot(y = acc, within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
   rename(acc = mean, acc_ci = ci)
 
 Data_Load_Exp2_load <- Raw_load_Exp2 %>%
-  agg_plot(y = load,  within = c(condition), group = participant) %>% 
-  select(condition, mean, ci) %>% 
+  agg_plot(y = load,  within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
   rename(load = mean, load_ci = ci)
 
 Data_Load_Exp2 <- left_join(Data_Load_Exp2_acc, Data_Load_Exp2_load)
 # Experiment 3
 
-Data_Load_Exp3_acc <- Raw_Load_Exp3 %>% 
-  agg_plot(y = acc, between = group, within = c(condition), group = participant) %>% 
-  select(group, condition, mean, ci) %>% 
+Data_Load_Exp3_acc <- Raw_Load_Exp3 %>%
+  agg_plot(y = acc, between = group, within = c(condition), group = participant) %>%
+  select(group, condition, mean, ci) %>%
   rename(acc = mean, acc_ci = ci)
 
 Data_Load_Exp3_load <- Raw_Load_Exp3 %>%
-  agg_plot(y = load, between = group, within = c(condition), group = participant) %>% 
-  select(group, condition, mean, ci) %>% 
+  agg_plot(y = load, between = group, within = c(condition), group = participant) %>%
+  select(group, condition, mean, ci) %>%
   rename(load = mean, load_ci = ci)
 
 Data_Load_Exp3 <- left_join(Data_Load_Exp3_acc, Data_Load_Exp3_load)
@@ -122,8 +123,9 @@ Data_Load_Exp3 <- left_join(Data_Load_Exp3_acc, Data_Load_Exp3_load)
 
 ```{r}
 
-Plot_CL_Exp1 <- Data_Load_Exp1 %>% 
-  mutate(group = "none") %>% 
+Plot_CL_Exp1 <- Data_Load_Exp1 %>%
+  mutate(group = "none") %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
   geom_line(color = "grey", linewidth=1) +
   geom_function(
@@ -143,7 +145,7 @@ Plot_CL_Exp1 <- Data_Load_Exp1 %>%
   labs(
     title = "Experiment 1",
     tag = "A",
-    x = "Cognitive load", 
+    x = "Cognitive load",
     y = "Proportion of correct",
     color = "Condition") +
   coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
@@ -162,8 +164,9 @@ Plot_CL_Exp1 <- Data_Load_Exp1 %>%
 
 ```{r}
 
-Plot_CL_Exp2 <- Data_Load_Exp2 %>% 
-  mutate(group = "none") %>% 
+Plot_CL_Exp2 <- Data_Load_Exp2 %>%
+  mutate(group = "none") %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
   geom_function(
     fun = function(x, b0, b1) return(b0 + b1 * x),
@@ -183,7 +186,7 @@ Plot_CL_Exp2 <- Data_Load_Exp2 %>%
   labs(
     title = "Experiment 2",
     tag = "B",
-    x = "Cognitive load", 
+    x = "Cognitive load",
     y = "Proportion of correct",
     color = "Condition") +
   coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
@@ -208,16 +211,17 @@ abline_data <- data.frame(
   b1    = c(-0.13, -0.41) # Slopes
 )
 
-Plot_CL_Exp3 <- Data_Load_Exp3 %>% 
+Plot_CL_Exp3 <- Data_Load_Exp3 %>%
   mutate(group = factor(
-    group, 
+    group,
     levels = c("groupC", "groupD"),
     labels = c("C group", "D group"))
   ) %>%
+  mutate(condition = factor_condition(condition)) %>%
   ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
   geom_abline(
-    data = abline_data, 
-    aes(intercept = b0, slope = b1), 
+    data = abline_data,
+    aes(intercept = b0, slope = b1),
     color = "grey", linetype = "dashed", linewidth = 0.8
   ) +
   geom_line(color = "grey", linewidth=1) +
@@ -232,11 +236,11 @@ Plot_CL_Exp3 <- Data_Load_Exp3 %>%
   labs(
     title = "Experiment 3",
     tag = "C",
-    x = "Cognitive load", 
+    x = "Cognitive load",
     y = "Proportion of correct",
     color = "Condition") +
   coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
-  scale_color_manual(values = c("B"="#FF7F6F","C1"="#2F7FC1", "C2"="#21597B","D1"="#FFBE7A","D2"="#FF7F00")) +
+  scale_color_manual(values = c("S" = "#FF7F6F", "S + J" = "#2F7FC1", "S + J2" = "#21597B", "S + J + D" = "#FFBE7A", "S + J2 + D" = "#FF7F00")) +
   theme(
     strip.text = element_text(size=10.5),
     strip.background = element_rect(fill = "#bababa"),
@@ -258,10 +262,13 @@ Plot_cognitive_load <- ggarrange(
 
 
 ggsave(
-  filename = str_glue("{figure_path}Plot_cognitiveLoad.pdf"),
+  path = figure_path,
+  filename = str_glue("Plot_cognitiveLoad.png"),
   plot = Plot_cognitive_load,
-  bg = "white",
-  width = 10, height = 4)
+  width = 10,
+  height = 4,
+  dpi = 300,
+  bg = "white")
 
 ```
 
@@ -272,14 +279,14 @@ ggsave(
 ```{r}
 
 mData_Load <- bind_rows(
-  Raw_load_Exp1 %>% mutate(exp = "Exp1", participant = factor(participant + 100)), 
+  Raw_load_Exp1 %>% mutate(exp = "Exp1", participant = factor(participant + 100)),
   Raw_load_Exp2 %>% mutate(exp = "Exp2", participant = factor(participant + 200)),
   Raw_Load_Exp3 %>% mutate(
     exp = ifelse(
       group == "groupC", "Exp3_C", "Exp3_D"
     ),
     participant = factor(participant + 300)
-  )) %>% 
+  )) %>%
   select(-condition, -group)
 
 ```
@@ -291,17 +298,17 @@ mData_Load <- bind_rows(
 normalized_sigmoid <- function(x, a1 = 0.0833, a2, b, s) {
   # 1. Calculate the raw logistic values
   raw_y <- 1 / (1 + exp(b * (x - s)))
-  
+
   # 2. Calculate the values at the endpoints (0 and 1)
   y_at_0 <- 1 / (1 + exp(b * (0 - s)))
   y_at_1 <- 1 / (1 + exp(b * (1 - s)))
-  
+
   # 3. Normalize (Rescale) so x=0 is y=1 and x=1 is y=0
   # This formula stretches the curve to fit the box exactly
   normalized_y <- a1 + (a2-a1) *(raw_y - y_at_1) / (y_at_0 - y_at_1)
-  
+
   return(normalized_y)
-} 
+}
 
 curve_params <- data.frame(
   name = c("Experiment 1", "Experiment 2", "Experiment 3 (C group)", "Experiment 3 (D group)"),
@@ -313,21 +320,21 @@ curve_params <- data.frame(
 
 ggplot() +
   coord_cartesian(ylim = c(0, 1), xlim = c(0, 1)) +
-  
+
   # Use lapply to loop through the rows of the data frame
   lapply(1:nrow(curve_params), function(i) {
-    
+
     # Extract row parameters
     row <- curve_params[i, ]
-    
+
     geom_function(
       fun = strict_sigmoid,
-      aes(color = row$name), 
+      aes(color = row$name),
       args = list(a2 = row$a2, s = row$s, b = row$b),
       linewidth = 1
     )
   }) +
-  
+
   # 4. (Optional) Use the specific colors defined in the data frame
   scale_color_manual(
     name = "Experiment",
@@ -349,7 +356,7 @@ smart_runFun(
     data = mData_Load,
     family = gaussian(),
     prior = c(
-      prior(normal(0,1), class = "b"), 
+      prior(normal(0,1), class = "b"),
       prior(student_t(3, 0, 2), class = "sd", lb = 0)
     ),
     iter = 4000,

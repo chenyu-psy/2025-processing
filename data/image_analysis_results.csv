@@ -1,0 +1,368 @@
+image,description,size
+image1.png,avocado,7.0
+image10.png,wedge of cheese,10.0
+image100.png,pomegranate,9.0
+image101.png,dining table,180.0
+image102.png,house,700.0
+image104.png,wallet,6.0
+image105.png,telephone handset,7.1
+image106.png,desk lamp,30.0
+image107.png,double bed,200.0
+image108.png,potted plant,40.0
+image109.png,candle,8.0
+image110.png,coffee mug,8.0
+image111.png,slice of cake,8.0
+image103.png,church,999.0
+image112.png,headset,13.0
+image113.png,grand piano,210.0
+image115.png,small bird,9.4
+image116.png,beanie (pom-pom winter hat),14.5
+image117.png,pair of gloves,10.0
+image118.png,ankle boot,13.6
+image119.png,snowflake,0.4
+image12.png,lip print,3.0
+image120.png,SUV (off-road vehicle),450.0
+image123.png,spoon,4.8
+image124.png,clown,170.0
+image125.png,popsicle,5.1
+image126.png,laptop computer,11.0
+image128.png,hammer,7.7
+image129.png,cordless drill,17.0
+image13.png,crown,15.0
+image130.png,area rug,250.0
+image132.png,electric hand mixer,15.0
+image133.png,hammock,300.0
+image134.png,martini glass,7.0
+image135.png,paintbrush,8.4
+image136.png,trash can,33.0
+image137.png,cooking pot,21.0
+image138.png,pencil,2.0
+image139.png,open book,9.6
+image14.png,dollar bill,1.0
+image140.png,diamond ring,2.0
+image141.png,dress,30.0
+image142.png,nail,1.0
+image143.png,snake,72.0
+image144.png,dog,60.0
+image145.png,cluster of mushrooms,10.0
+image146.png,baby stroller,95.0
+image147.png,pacifier,3.0
+image148.png,cat,30.0
+image149.png,shopping basket,29.3
+image15.png,frog,12.0
+image150.png,tennis racket,17.7
+image151.png,umbrella,10.0
+image152.png,sofa,180.0
+image153.png,television,40.3
+image154.png,clothes iron,16.2
+image155.png,broom,14.5
+image156.png,clothes hanger,6.5
+image157.png,armchair,95.0
+image158.png,floor lamp,150.0
+image159.png,dresser,120.0
+image16.png,rain cloud,999.0
+image160.png,thumbtack (pushpin),0.7
+image161.png,paper hole punch,8.7
+image163.png,liquid soap dispenser,8.0
+image164.png,hair dryer,13.5
+image165.png,aviator sunglasses,6.6
+image166.png,wrapped present,30.0
+image167.png,bowling ball,17.4
+image168.png,chess rook,3.0
+image169.png,castle,999.0
+image17.png,ear of corn,7.0
+image171.png,burrito,9.6
+image172.png,french fries (container),8.0
+image173.png,high-speed train,999.0
+image174.png,airplane,999.0
+image176.png,bicycle,170.0
+image177.png,skateboard,15.0
+image178.png,bus,999.0
+image179.png,quad roller skate,15.5
+image18.png,piggy bank,18.0
+image180.png,scarf,14.0
+image181.png,rainbow,999.0
+image182.png,sailboat,800.0
+image185.png,pair of flip-flop sandals,10.1
+image186.png,hot air balloon,999.0
+image187.png,cruise ship,300.0
+image188.png,electrical plug,5.0
+image189.png,gondola (cable car cabin),400.0
+image19.png,honey jar,8.0
+image190.png,snowman,150.0
+image191.png,rabbit,35.0
+image192.png,guinea pig,20.0
+image193.png,washing machine,85.0
+image194.png,ladder,240.0
+image195.png,bathtub,160.0
+image197.png,Ferris wheel,999.0
+image198.png,ice cream cone,6.8
+image199.png,sock,7.0
+image2.png,bananas,6.3
+image20.png,four-leaf clover,4.5
+image200.png,housefly,0.5
+image201.png,suit jacket,20.0
+image202.png,lipstick,2.9
+image204.png,kitchen stove (oven range),67.4
+image205.png,mountain,999.0
+image206.png,high-visibility safety vest,14.0
+image207.png,fish,24.0
+image208.png,wine bottle,11.0
+image209.png,necktie,5.5
+image21.png,jeans,20.0
+image211.png,film reel,21.3
+image212.png,showerhead,8.0
+image213.png,pill (tablet or capsule),0.7
+image214.png,tombstone,80.0
+image215.png,person (hiker),153.0
+image216.png,travel trailer (caravan),500.0
+image217.png,pistol,8.5
+image218.png,security camera,13.5
+image22.png,eggplant,9.1
+image220.png,lit match,0.5
+image222.png,bear,200.0
+image223.png,police officer,170.0
+image225.png,fire extinguisher,22.0
+image226.png,gas pump,70.2
+image228.png,signpost,250.0
+image229.png,astronaut helmet,25.0
+image23.png,carrot,4.7
+image230.png,"space station (e.g., International Space Station)",999.0
+image232.png,refrigerator,180.0
+image233.png,electric hair clipper,6.2
+image234.png,blender,24.0
+image235.png,Swiss Army knife,3.5
+image236.png,garden trowel and hand fork,11.0
+image237.png,hammer and handsaw,8.1
+image238.png,pedestal fan,120.0
+image239.png,AC power adapter (laptop charger),6.0
+image24.png,octopus,80.0
+image240.png,ventilation/exhaust fan,19.0
+image241.png,kitchen range hood,90.0
+image243.png,gasoline can,27.1
+image244.png,car tire (wheel),65.0
+image245.png,steering wheel,10.5
+image247.png,cloud,999.0
+image248.png,cloud (partly cloudy — sun behind cloud),300.0
+image25.png,wheat stalks,40.0
+image250.png,rolling suitcase,34.0
+image251.png,ribbon bow,10.0
+image252.png,bow and arrow,12.0
+image253.png,kettle (charcoal) grill,50.0
+image254.png,chef (adult human),140.0
+image255.png,spoon and spatula (cooking utensils),4.5
+image256.png,baking utensils (rolling pin and whisk),10.2
+image257.png,woman,170.0
+image258.png,gavel,7.0
+image259.png,balance scale,30.0
+image26.png,fox,45.0
+image260.png,circus tent,999.0
+image261.png,paint roller,9.5
+image262.png,handheld game console (Game Boy style),7.5
+image263.png,tennis ball,5.4
+image264.png,"board game (cards, dice, pawn)",18.6
+image265.png,video game controller,9.6
+image266.png,jigsaw puzzle piece,1.5
+image269.png,upright vacuum cleaner,45.0
+image27.png,peach,6.0
+image272.png,money bag,35.0
+image273.png,rocket,999.0
+image274.png,portable MP3 player (iPod-style),3.9
+image276.png,satellite dish,90.0
+image278.png,megaphone,21.6
+image279.png,telescope,34.7
+image28.png,stack of gold bars,10.0
+image280.png,satellite,20.0
+image284.png,tunnel,200.0
+image285.png,dolphin,240.0
+image286.png,camel,270.0
+image287.png,bat,7.0
+image288.png,armadillo,34.0
+image29.png,pumpkin,30.0
+image292.png,cupcake,6.8
+image293.png,wooden barrel (barrel with spigot),60.2
+image294.png,bottle opener,2.5
+image295.png,glass of juice (tall drinking glass with straw),7.1
+image296.png,disposable coffee cup,7.0
+image297.png,beer mug,7.9
+image298.png,champagne bottle,12.4
+image299.png,rowboat,300.0
+image3.png,baguette,12.0
+image30.png,basketball,19.4
+image300.png,sailboat,800.0
+image301.png,container ship,300.0
+image302.png,ice cream sundae,11.0
+image303.png,quadcopter drone,20.0
+image304.png,"hookah (water pipe, shisha)",18.0
+image305.png,sewing needle,0.2
+image306.png,hooded sweatshirt (hoodie),41.4
+image307.png,sewing machine,28.0
+image308.png,clothing button,0.8
+image309.png,high-heeled shoe,13.6
+image31.png,unicorn,150.0
+image312.png,computer monitor,20.5
+image313.png,horseshoe magnet,10.0
+image314.png,wired computer mouse,6.5
+image315.png,credit card,1.5
+image317.png,wristwatch,3.0
+image318.png,binoculars,9.5
+image319.png,backpack,34.0
+image32.png,soccer field,105.0
+image320.png,person,170.0
+image321.png,mosque,40.0
+image323.png,human foot,25.0
+image324.png,tooth (molar),1.4
+image325.png,pair of crutches,12.6
+image326.png,human eye,1.9
+image327.png,butterfly,6.3
+image328.png,ballot box,40.0
+image329.png,handcuffs,8.0
+image330.png,locker,180.0
+image331.png,LEGO brick,1.7
+image332.png,toy xylophone,12.2
+image333.png,box of tissues,13.2
+image334.png,bucket and dustpan,25.0
+image335.png,baby bottle,6.3
+image336.png,pizza cutter,7.0
+image337.png,box grater,12.3
+image338.png,pour-over coffee dripper,12.0
+image339.png,leg of ham,20.0
+image34.png,ocean wave,210.0
+image340.png,open cardboard box,40.0
+image341.png,can of cat food,5.0
+image342.png,submarine,100.0
+image343.png,bathroom scale,16.0
+image344.png,face mask,4.0
+image345.png,safe,60.0
+image346.png,paraglider,950.0
+image347.png,mountains,999.0
+image349.png,sickle,5.8
+image35.png,Earth (planet),999.0
+image350.png,shuriken (throwing star),3.0
+image351.png,bamboo,450.0
+image353.png,toothpaste tube,5.0
+image355.png,Empire State Building,443.2
+image356.png,corkscrew,5.5
+image357.png,smartphone,4.3
+image358.png,violin (with bow),16.2
+image359.png,trumpet,11.0
+image360.png,lyre,19.0
+image361.png,accordion,26.5
+image362.png,drum,24.2
+image363.png,portable radio,11.3
+image364.png,cassette tape,4.2
+image365.png,whistle,5.0
+image368.png,graduation cap,18.5
+image369.png,all-terrain vehicle (ATV),200.0
+image37.png,chili pepper,4.2
+image370.png,lawn mower,58.5
+image371.png,soda can,7.1
+image373.png,watering can,17.5
+image375.png,spray bottle,8.0
+image376.png,canister vacuum cleaner,40.0
+image377.png,toilet plunger,8.7
+image378.png,oven mitt,13.0
+image379.png,moka pot (stovetop espresso maker),15.0
+image38.png,apple,6.5
+image380.png,stand mixer,30.8
+image381.png,water faucet (tap),12.0
+image382.png,gas mask,23.2
+image384.png,tiered fountain,100.0
+image385.png,traffic light,48.0
+image388.png,torii (Shinto shrine gate),350.0
+image389.png,sushi rolls with chopsticks,4.8
+image39.png,birthday cake,16.0
+image390.png,bag of potting soil,36.8
+image391.png,windmill,20.0
+image392.png,scarecrow,160.0
+image393.png,horse,204.0
+image394.png,ball of yarn (with knitting needles),10.0
+image395.png,pepper grinder,8.2
+image396.png,owl,34.0
+image397.png,ant,0.5
+image398.png,gorilla,150.0
+image399.png,seahorse,9.0
+image4.png,croissant,7.0
+image40.png,sun,999.0
+image400.png,raccoon,42.0
+image401.png,swim fins (diving/snorkel flippers),12.0
+image402.png,sun hat,30.0
+image403.png,swim trunks,12.0
+image404.png,folding hand fan,7.5
+image405.png,candle,10.0
+image407.png,chocolate bar,5.0
+image408.png,vintage perfume atomizer (spray bottle with bulb),7.0
+image409.png,wreath,28.0
+image410.png,calendar,7.0
+image411.png,sausage (on a roasting/grill fork),3.9
+image412.png,angelfish,10.5
+image413.png,llama,153.0
+image414.png,side table,55.0
+image415.png,vase with flowers,20.0
+image416.png,pipe organ,400.0
+image417.png,goblet,9.0
+image418.png,bagpipes,25.0
+image419.png,drum kit,150.0
+image42.png,campfire,100.0
+image420.png,harp,150.0
+image421.png,papaya,14.0
+image422.png,circular saw,23.0
+image423.png,set square (triangle ruler),5.0
+image424.png,step ladder,52.2
+image425.png,tree,700.0
+image426.png,potted plant,48.0
+image427.png,hanging potted plant,40.0
+image428.png,tank top,9.0
+image429.png,hooded coat,40.0
+image43.png,first aid kit,18.0
+image431.png,high-top sneaker,14.8
+image44.png,bunch of grapes,10.0
+image45.png,pineapple,13.0
+image47.png,bell,12.0
+image49.png,lobster,20.0
+image5.png,chainsaw,27.1
+image50.png,shrimp,8.0
+image52.png,palm tree,800.0
+image53.png,pear,6.4
+image54.png,rubber duck,7.0
+image55.png,saxophone,75.0
+image56.png,sea turtle,80.0
+image57.png,cherries,2.5
+image58.png,crab,12.0
+image59.png,ladybug,0.8
+image6.png,rose,20.0
+image60.png,adult woman,165.0
+image61.png,lemon,6.0
+image62.png,tomato,7.5
+image63.png,tree,800.0
+image64.png,pine tree,960.0
+image65.png,saguaro cactus,450.0
+image66.png,crescent moon,999.0
+image68.png,velociraptor (theropod dinosaur),120.0
+image7.png,blueberries,3.0
+image70.png,wine glass,7.0
+image71.png,turnip,8.0
+image72.png,strawberry,3.0
+image73.png,raspberry,1.6
+image76.png,mandarin (tangerine),5.5
+image77.png,shelf with decorative vases and bowls,120.0
+image78.png,volcano,999.0
+image79.png,person,170.0
+image8.png,flamingo,96.0
+image81.png,pea pod,2.7
+image82.png,girl,95.0
+image83.png,boy,140.0
+image86.png,sausage,4.5
+image88.png,fig (fruit),3.5
+image89.png,Monstera leaf,35.0
+image9.png,iguana,36.0
+image90.png,traffic cone,23.0
+image91.png,tiger,230.0
+image92.png,fried egg,4.0
+image93.png,pear-shaped cut gemstone (teardrop/pear diamond),1.5
+image94.png,highlighter marker,3.4
+image95.png,bee,1.0
+image96.png,sunflower,180.0
+image98.png,watermelon slice,15.0
+image99.png,romaine lettuce,16.5
+image290.png,fruit knife,8.5

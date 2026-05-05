@@ -1,0 +1,130 @@
+/*
+This stylesheet contains presentation-specific visual settings for Quarto
+revealjs slides. Keep styles here so the slide source stays easy to read.
+*/
+
+:root {
+  --r-background-color: #ffffff;
+  --r-main-color: #16345f;
+  --r-heading-color: #0d2d63;
+  --r-link-color: #0d4aa6;
+  --r-link-color-hover: #082f6c;
+  --r-selection-background-color: #c9d8f0;
+}
+
+.reveal {
+  font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 34px;
+}
+
+.reveal-viewport {
+  background: #ffffff;
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+  font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0d2d63;
+}
+
+.reveal .slide-background-content {
+  background: #ffffff;
+}
+
+.reveal ul {
+  line-height: 1.45;
+}
+
+.reveal p,
+.reveal li {
+  font-size: 1em;
+  color: #16345f;
+}
+
+.reveal strong {
+  color: #0d2d63;
+}
+
+.reveal .slides section {
+  padding: 0.6em 1.4em 1.1em 1.4em;
+  background: transparent;
+}
+
+.reveal .slides section:not(#title-slide) h1,
+.reveal .slides section:not(#title-slide) h2 {
+  margin-bottom: 0.6em;
+  padding-top: 0.15em;
+  border-bottom: 3px solid rgba(13, 45, 99, 0.12);
+}
+
+.reveal .slides section.title-slide:not(#title-slide) h1 {
+  font-size: 1em;
+  position: static;
+  margin: 0 0 0.8em 0;
+  padding: 0 0 0.2em 0;
+}
+
+.reveal .slides section.title-slide:not(#title-slide) {
+  display: block;
+  min-height: 100%;
+  padding-top: 1.1em;
+}
+
+.reveal .slides section.slide.level2 h2 {
+  display: block;
+  margin: 0;
+  padding: 0 0 0.2em 0;
+  font-size: 1.25em;
+  line-height: 1.1;
+  align-self: start;
+  justify-self: start;
+}
+
+.reveal .slides section.slide.level2 {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+  text-align: left;
+}
+
+.reveal .slides section.slide.level2 > *:not(h2) {
+  margin-top: 1.2em;
+}
+
+.reveal img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.reveal .progress {
+  color: #0d4aa6;
+}
+
+.reveal p.caption {
+  display: none;
+}
+
+.reveal .title {
+  font-size: 2em;
+  line-height: 1.08;
+  max-width: 30em;
+  margin: 0 auto 2.2rem auto;
+  text-align: center;
+}
+
+.reveal .quarto-title-author-name,
+.reveal .author {
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}

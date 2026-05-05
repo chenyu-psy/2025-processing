@@ -1,0 +1,8 @@
+project:
+  type: default
+  output-dir: output
+  render:
+    - slides.qmd
+
+execute:
+  freeze: auto

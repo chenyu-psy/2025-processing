@@ -1,0 +1,37 @@
+---
+title: "Is there a trade-off between processing and maintenance of information in working memory?"
+author: "Chenyu Li & Klaus Oberauer"
+format:
+  revealjs:
+    theme: white
+    width: 1600
+    height: 900
+    auto-stretch: false
+    embed-resources: true
+    slide-number: true
+    chalkboard: false
+    incremental: true
+    transition: fade
+    smaller: false
+    css: slides.css
+    preview-links: auto
+editor: source
+---
+
+## Introduction
+
+hello, how are you?
+
+## Introduction
+
+## The present study
+
+## Experiment 1 -- Design
+
+::: {style="margin-top: 3em;"}
+![](../figures/figures_illustration/exp1_condition.jpg){width="80%"}
+:::
+
+## Experiment 1 -- Procedure
+
+![](../figures/figures_illustration/exp1_procedure.jpg){width="88%"}

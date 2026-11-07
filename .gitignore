@@ -3,8 +3,8 @@
 .RData
 .Ruserdata
 
-# ignore the model files 
-models
+# ignore the model files
+results/models
 
 # Quarto render output/cache
 .quarto/

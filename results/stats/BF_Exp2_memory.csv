@@ -1,0 +1,4 @@
+task,model,analysis,contrast,log_BF,BF
+Exp2,Memory_Correct,condition_pairwise,B - C2,-0.8802924535748342,0.4146616246725541
+Exp2,Memory_Correct,condition_pairwise,B - D,6.532776070190903,687.3035685143999
+Exp2,Memory_Correct,condition_pairwise,C2 - D,6.858380345563237,951.8241920902352

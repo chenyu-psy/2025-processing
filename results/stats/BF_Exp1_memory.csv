@@ -1,0 +1,5 @@
+task,model,analysis,parameter,log_BF,Effects,Component,BF
+Exp1,Memory_Correct,parameter,b_Intercept,9.53002939854373,fixed,conditional,13766.995807684634
+Exp1,Memory_Correct,parameter,b_simple,-1.1742380696472967,fixed,conditional,0.30905436790546115
+Exp1,Memory_Correct,parameter,b_judge,0.9893207845476939,fixed,conditional,2.6894071649478253
+Exp1,Memory_Correct,parameter,b_distractor,8.523179664540246,fixed,conditional,5030.022139324421

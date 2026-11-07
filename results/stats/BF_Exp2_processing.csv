@@ -1,0 +1,25 @@
+task,model,analysis,contrast,condition,log_BF,BF,phase
+Exp2,Processing_RT,phase_pairwise,phase0 - phase1,B,28.522437805081502,2438581917869.8076,NA
+Exp2,Processing_RT,phase_pairwise,phase0 - phase1,C2,12.707902751340935,330348.2735567284,NA
+Exp2,Processing_RT,phase_pairwise,phase0 - phase1,D,18.202158543963957,80370563.69907808,NA
+Exp2,Processing_RT,condition_pairwise,B - C2,NA,24.584118780340788,47505853897.491974,0
+Exp2,Processing_RT,condition_pairwise,B - D,NA,33.578559801408545,382809962844623.94,0
+Exp2,Processing_RT,condition_pairwise,C2 - D,NA,0.5994419608088204,1.8211022703470872,0
+Exp2,Processing_RT,condition_pairwise,B - C2,NA,7.039305910863668,1140.5956567645553,1
+Exp2,Processing_RT,condition_pairwise,B - D,NA,15.418068676545303,4965719.088749879,1
+Exp2,Processing_RT,condition_pairwise,C2 - D,NA,3.6633593240192512,38.99211023585837,1
+Exp2,Processing_RT,phase_difference_in_step_trend,phase0 - phase1,B,-2.1488223459033247,0.11662141662495772,NA
+Exp2,Processing_RT,phase_difference_in_step_trend,phase0 - phase1,C2,-2.752613708865466,0.06376099055976367,NA
+Exp2,Processing_RT,phase_difference_in_step_trend,phase0 - phase1,D,-2.019319497210948,0.13274576821637496,NA
+Exp2,Processing_Correct,phase_pairwise,phase0 - phase1,B,9.816633833232851,18336.22395210795,NA
+Exp2,Processing_Correct,phase_pairwise,phase0 - phase1,C2,-0.29220161361218955,0.746617992447672,NA
+Exp2,Processing_Correct,phase_pairwise,phase0 - phase1,D,-1.9625471236130179,0.14050009365667349,NA
+Exp2,Processing_Correct,condition_pairwise,B - C2,NA,50.09224338836725,5685712422262745e6,0
+Exp2,Processing_Correct,condition_pairwise,B - D,NA,37.460398577099305,18571389214682496,0
+Exp2,Processing_Correct,condition_pairwise,C2 - D,NA,6.296737570381769,542.798177509208,0
+Exp2,Processing_Correct,condition_pairwise,B - C2,NA,38.516395910869086,53389789293914056,1
+Exp2,Processing_Correct,condition_pairwise,B - D,NA,23.775893540564685,21170902252.267815,1
+Exp2,Processing_Correct,condition_pairwise,C2 - D,NA,8.50040418185895,4916.7557022050405,1
+Exp2,Processing_Correct,phase_difference_in_step_trend,phase0 - phase1,B,0.5256922166321626,1.6916294172067905,NA
+Exp2,Processing_Correct,phase_difference_in_step_trend,phase0 - phase1,C2,-2.0847244146390347,0.124341382109189,NA
+Exp2,Processing_Correct,phase_difference_in_step_trend,phase0 - phase1,D,-1.0959224271245729,0.3342311608223216,NA

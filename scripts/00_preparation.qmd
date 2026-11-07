@@ -6,7 +6,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Clear workspacce and set default color
+# 1 Clear workspacce and set default color
 
 ```{r reset, include=FALSE}
 graphics.off()
@@ -14,23 +14,26 @@ rm(list=ls(all.names=TRUE))
 options(digits = 3)
 ```
 
-# Import functions and packages
+# 2 Import functions and packages
 
 ```{r}
 
 # Install and load required packages
-packages = c(
-  # CRAN packages
-  "tidyverse",
-  # Github packages for specialized functions
-  "chenyu-psy/smartr@v0.3.2"
-)
-process_packages(packages, quietly = TRUE)
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+
+# CRAN packages
+pacman::p_load(char = c("tidyverse"))
+
+# GitHub packages for specialized functions
+pacman::p_load_gh(char = c("chenyu-psy/smartr@v0.3.2"))
+
+# Source shared preprocessing helpers
+source("./helpers/preprocess_helpers.R")
 
 ```
 
 
-# Experiment 1a
+# 3 Experiment 1a
 
 The data has been saved in local folder `./raw_data/Data_Exp1/`
 
@@ -56,7 +59,10 @@ Data_Exp1 <- Raw_Exp1 %>%
   select(participant, blockID, trialID, condition, screenID, 
          leftColor, rightColor, leftImage, rightImage, correctObject,
          response, acc, rt) %>% 
-  mutate(response = as.character(response))
+  mutate(
+    response = as.character(response),
+    phase = recode_phase(screenID)
+  )
   
 Data_Exp1 %>% write_csv(file = "./data/source/Data_Exp1.csv")
 
@@ -73,7 +79,7 @@ Survey_Exp1 %>%
 
 ```
 
-# Experiment 1b
+# 4 Experiment 1b
 
 
 ```{r}
@@ -104,7 +110,10 @@ Data_Exp1b <- Raw_Exp1b %>%
       condition=="B"&screenID=="processing" ~ correctResp==response,
       TRUE ~ acc
     )) %>% 
-  mutate(response = as.character(response)) %>% 
+  mutate(
+    response = as.character(response),
+    phase = recode_phase(screenID)
+  ) %>% 
   mutate(
     target = case_when(
       screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
@@ -139,9 +148,9 @@ Survey_Exp1b %>%
 
 ```
 
-# Experiment 2a
+# 5 Experiment 2a
 
-## Download data
+## 5.1 Download data
 ```{r}
 # Download the data from JATOS
 Metadata_Exp2a <- get_JATOS_data(
@@ -153,7 +162,7 @@ Metadata_Exp2a <- get_JATOS_data(
 
 ```
 
-## Retrieve data
+## 5.2 Retrieve data
 ```{r}
 
 Metadata_Exp2a <- read_metaData("./raw_data/Data_Exp2a/metadata.json") %>% 
@@ -183,7 +192,10 @@ Data_Exp2a <- Raw_Exp2a %>%
     #   TRUE ~ acc
     # )
     ) %>% 
-  mutate(response = as.character(response)) %>% 
+  mutate(
+    response = as.character(response),
+    phase = recode_phase(screenID)
+  ) %>% 
   mutate(
     target = case_when(
       screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
@@ -219,9 +231,9 @@ Survey_Exp2a %>%
 ```
 
 
-# Experiment 2b
+# 6 Experiment 2b
 
-## Download data
+## 6.1 Download data
 ```{r}
 # Download the data from JATOS
 Metadata_Exp2b <- get_JATOS_data(
@@ -233,7 +245,7 @@ Metadata_Exp2b <- get_JATOS_data(
 
 ```
 
-## Retrieve data
+## 6.2 Retrieve data
 ```{r}
 
 Metadata_Exp2b <- read_metaData("./raw_data/Data_Exp2b/metadata.json") %>% 
@@ -253,7 +265,10 @@ Data_Exp2b <- Raw_Exp2b %>%
          leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
          response, acc, rt) %>% 
   rename(correctResp=correctJudge) %>% 
-  mutate(response = as.character(response)) %>% 
+  mutate(
+    response = as.character(response),
+    phase = recode_phase(screenID)
+  ) %>% 
   mutate(
     target = case_when(
       screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
@@ -289,9 +304,9 @@ Survey_Exp2b %>%
 ```
 
 
-# Experiment 2c
+# 7 Experiment 2c
 
-## Download data
+## 7.1 Download data
 ```{r}
 # Download the data from JATOS
 Metadata_Exp2c <- get_JATOS_data(
@@ -303,7 +318,7 @@ Metadata_Exp2c <- get_JATOS_data(
 
 ```
 
-## Retrieve data
+## 7.2 Retrieve data
 ```{r}
 
 Metadata_Exp2c <- read_metaData("./raw_data/Data_Exp2c/metadata.json") %>% 
@@ -323,7 +338,10 @@ Data_Exp2c <- Raw_Exp2c %>%
          leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
          response, acc, rt) %>% 
   rename(correctResp=correctJudge) %>% 
-  mutate(response = as.character(response)) %>% 
+  mutate(
+    response = as.character(response),
+    phase = recode_phase(screenID)
+  ) %>% 
   mutate(
     target = case_when(
       screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
@@ -358,9 +376,9 @@ Survey_Exp2c %>%
 
 ```
 
-# Experiment 2d
+# 8 Experiment 2d
 
-## Download data
+## 8.1 Download data
 ```{r}
 # Download the data from JATOS
 Metadata_Exp2d <- get_JATOS_data(
@@ -372,7 +390,7 @@ Metadata_Exp2d <- get_JATOS_data(
 
 ```
 
-## Retrieve data
+## 8.2 Retrieve data
 ```{r}
 
 Metadata_Exp2d <- read_metaData("./raw_data/Data_Exp2d/metadata.json") %>% 
@@ -392,7 +410,11 @@ Data_Exp2d <- Raw_Exp2d %>%
          leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
          response, acc, rt) %>% 
   rename(correctResp=correctJudge) %>% 
-  mutate(response = as.character(response)) %>% 
+  mutate(
+    response = as.character(response),
+    condition = recode(condition, "C" = "C2"),
+    phase = recode_phase(screenID)
+  ) %>% 
   mutate(
     target = case_when(
       screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
@@ -428,9 +450,9 @@ Survey_Exp2d %>%
 ```
 
 
-# Experiment 3
+# 9 Experiment 3
 
-## Download data
+## 9.1 Download data
 ```{r}
 # Download the data from JATOS
 Metadata_Exp3a <- get_JATOS_data(
@@ -449,19 +471,19 @@ Metadata_Exp3b <- get_JATOS_data(
 
 ```
 
-## Retrieve data
+## 9.2 Retrieve data
 ```{r}
 
 Metadata_Exp3a <- read_metaData("./raw_data/Data_Exp3a/metadata.json") %>%
   filter(studyState == "FINISHED",!is.na(file)) %>% 
   extract_data_info("participant") %>% 
-  mutate(group  = "groupC") %>% 
+  mutate(group  = "noDist") %>% 
   slice(1:50)
 
 Metadata_Exp3b <- read_metaData("./raw_data/Data_Exp3b/metadata.json") %>%
   filter(studyState == "FINISHED",!is.na(file)) %>%
   extract_data_info("participant") %>% 
-  mutate(group = "groupD") %>% 
+  mutate(group = "Dist") %>% 
   slice(1:50)
 
 Metadata_Exp3_filtered <- bind_rows(Metadata_Exp3a, Metadata_Exp3b)
@@ -481,7 +503,10 @@ Data_Exp3 <- Raw_Exp3 %>%
          leftColor, rightColor, leftImage, leftSize, rightImage, rightSize, correctObject, correctJudge,
          response, acc, rt) %>% 
   rename(correctResp=correctJudge) %>% 
-  mutate(response = as.character(response)) %>% 
+  mutate(
+    response = as.character(response),
+    phase = recode_phase(screenID)
+  ) %>% 
   mutate(
     target = case_when(
       screenID=="memory-resp" & leftColor=="#FFFFFF" ~ rightImage,
@@ -515,4 +540,3 @@ Survey_Exp3 %>%
   write_csv(file = "./data/source/Survey_Exp3.csv")
 
 ```
-

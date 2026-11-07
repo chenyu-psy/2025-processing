@@ -1,0 +1,552 @@
+---
+title: "Cross-experiment analysis"
+author: "Chenyu Li"
+format: html
+editor: source
+editor_options:
+  chunk_output_type: console
+---
+
+# 1 Setup
+
+## 1.1 Reset workspace and set defaults
+
+```{r reset, include=FALSE}
+# Clear all plots and variables from workspace
+graphics.off()
+rm(list=ls(all.names=TRUE))
+
+# Set numerical precision and color schemes
+options(digits = 3)
+options(ggplot2.discrete.colour= c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A"))
+options(ggplot2.discrete.fill= c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A"))
+```
+
+## 1.2 Load packages and helper functions
+
+```{r}
+# Install and load required packages
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+
+# CRAN packages for data analysis and visualization
+pacman::p_load(
+  char = c("tidyverse", "brms", "ggpubr")
+)
+
+# GitHub packages for specialized functions
+pacman::p_load_gh(char = c("chenyu-psy/smartr@v0.3.2"))
+
+# Source helper functions for readable labels and plot layouts
+source("./helpers/label_helpers.R")
+source("./helpers/plot_helpers.R")
+
+# Set default ggplot theme
+theme_set(theme_analysis())
+```
+
+## 1.3 Define output paths and plotting settings
+
+```{r}
+task <- "cross_experiment"
+model_path <- str_glue("./results/models/models_{task}/")
+figure_path <- str_glue("./results/figures/figures_{task}/")
+
+# Create output directories if they do not exist
+dir.create(model_path, showWarnings = FALSE)
+dir.create(figure_path, showWarnings = FALSE)
+
+# Set cognitive-load prediction styles
+pred_line_color <- "grey30"
+pred_ribbon_fill <- "grey60"
+
+label_cl_group <- function(exp) {
+  exp3_group <- case_when(
+    exp == "Exp3_noDist" ~ "noDist",
+    exp == "Exp3_Dist" ~ "Dist",
+    TRUE ~ NA_character_
+  )
+
+  case_when(
+    !is.na(exp3_group) ~ as.character(label_exp3_group(exp3_group)),
+    TRUE ~ "none"
+  )
+}
+```
+
+# 2 Memory performance
+
+## 2.1 Load processed memory data
+
+```{r}
+Raw_memory_Exp1 <- read_rds("./data/processed/Data_Exp1_Ret.rds")
+Raw_memory_Exp2 <- read_rds("./data/processed/Data_Exp2_Ret.rds")
+Raw_memory_Exp3 <- read_rds("./data/processed/Data_Exp3_Ret.rds")
+```
+
+## 2.2 Summarize observed memory accuracy
+
+```{r}
+# Experiment 1
+Data_memory_Exp1 <- Raw_memory_Exp1 %>%
+  agg_plot(y = Correct, within = c(condition), group = participant)
+
+# Experiment 2
+Data_memory_Exp2 <- Raw_memory_Exp2 %>%
+  agg_plot(y = Correct, within = c(condition), group = participant)
+
+# Experiment 3
+Data_memory_Exp3 <- Raw_memory_Exp3 %>%
+  agg_plot(
+    y = Correct,
+    between = group,
+    within = c(condition),
+    group = participant
+  )
+```
+
+## 2.3 Visualize memory performance
+
+### 2.3.1 Experiment 1
+
+```{r}
+Plot_memory_Exp1 <- Data_memory_Exp1 %>%
+  mutate(
+    group = "none",
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = condition, y = mean, color = condition)) +
+  geom_errorbar(
+    aes(ymin = mean - ci, ymax = mean + ci),
+    linewidth = 0.8, width = 0.05
+  ) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group) +
+  labs(
+    title = "Experiment 1",
+    tag = "a",
+    x = "Condition",
+    y = "Proportion Correct"
+  ) +
+  coord_cartesian(ylim = c(0.4, 0.8)) +
+  scale_color_manual(values = c("#615F63", "#FF7F6F", "#2F7FC1", "#FFBE7A")) +
+  theme(
+    strip.text = element_text(color = "#bababa")
+  )
+```
+
+### 2.3.2 Experiment 2
+
+```{r}
+Plot_memory_Exp2 <- Data_memory_Exp2 %>%
+  mutate(
+    group = "none",
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = condition, y = mean, color = condition)) +
+  geom_errorbar(
+    aes(ymin = mean - ci, ymax = mean + ci),
+    linewidth = 0.8, width = 0.05
+  ) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group) +
+  labs(
+    title = "Experiment 2",
+    tag = "b",
+    x = "Condition",
+    y = "Proportion Correct"
+  ) +
+  coord_cartesian(ylim = c(0.4, 0.8)) +
+  scale_color_manual(values = c("#FF7F6F", "#21597B", "#FFBE7A")) +
+  theme(
+    strip.text = element_text(color = "#bababa")
+  )
+```
+
+### 2.3.3 Experiment 3
+
+```{r}
+Plot_memory_Exp3 <- Data_memory_Exp3 %>%
+  mutate(
+    group = label_exp3_group(group),
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = condition, y = mean, color = condition)) +
+  geom_errorbar(
+    aes(ymin = mean - ci, ymax = mean + ci),
+    linewidth = 0.8, width = 0.05
+  ) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group, scales = "free_x", space = "free_x") +
+  labs(
+    title = "Experiment 3",
+    tag = "c",
+    x = "Condition",
+    y = "Proportion Correct",
+    color = "Condition"
+  ) +
+  coord_cartesian(ylim = c(0.4, 0.8)) +
+  scale_color_manual(values = c("#FF7F6F", "#2F7FC1", "#21597B", "#FFBE7A", "#FF7F00"))
+```
+
+### 2.3.4 Combine and save plots
+
+```{r}
+Plot_memory_performance <- ggarrange(
+  Plot_memory_Exp1, Plot_memory_Exp2, Plot_memory_Exp3,
+  common.legend = TRUE,
+  legend = "right",
+  legend.grob = get_legend(Plot_memory_Exp3),
+  ncol = 3,
+  nrow = 1,
+  widths = c(1.3, 1.3, 2.3)
+)
+
+ggsave(
+  path = figure_path,
+  filename = "Plot_memory_performance.png",
+  plot = Plot_memory_performance,
+  width = 13,
+  height = 4,
+  dpi = 300,
+  bg = "white"
+)
+```
+
+# 3 Cognitive load
+
+## 3.1 Load processed cognitive-load data
+
+```{r}
+Raw_load_Exp1 <- read_rds("./data/processed/Data_Exp1_load.rds")
+Raw_load_Exp2 <- read_rds("./data/processed/Data_Exp2_load.rds")
+Raw_load_Exp3 <- read_rds("./data/processed/Data_Exp3_load.rds")
+```
+
+## 3.2 Summarize observed data
+
+```{r}
+# Experiment 1
+Data_Load_Exp1_acc <- Raw_load_Exp1 %>%
+  agg_plot(y = acc, within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
+  rename(acc = mean, acc_ci = ci)
+
+Data_Load_Exp1_load <- Raw_load_Exp1 %>%
+  agg_plot(y = load, within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
+  rename(load = mean, load_ci = ci)
+
+Data_Load_Exp1 <- left_join(Data_Load_Exp1_acc, Data_Load_Exp1_load)
+
+# Experiment 2
+Data_Load_Exp2_acc <- Raw_load_Exp2 %>%
+  agg_plot(y = acc, within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
+  rename(acc = mean, acc_ci = ci)
+
+Data_Load_Exp2_load <- Raw_load_Exp2 %>%
+  agg_plot(y = load, within = c(condition), group = participant) %>%
+  select(condition, mean, ci) %>%
+  rename(load = mean, load_ci = ci)
+
+Data_Load_Exp2 <- left_join(Data_Load_Exp2_acc, Data_Load_Exp2_load)
+
+# Experiment 3
+Data_Load_Exp3_acc <- Raw_load_Exp3 %>%
+  agg_plot(
+    y = acc,
+    between = group,
+    within = c(condition),
+    group = participant
+  ) %>%
+  select(group, condition, mean, ci) %>%
+  rename(acc = mean, acc_ci = ci)
+
+Data_Load_Exp3_load <- Raw_load_Exp3 %>%
+  agg_plot(
+    y = load,
+    between = group,
+    within = c(condition),
+    group = participant
+  ) %>%
+  select(group, condition, mean, ci) %>%
+  rename(load = mean, load_ci = ci)
+
+Data_Load_Exp3 <- left_join(Data_Load_Exp3_acc, Data_Load_Exp3_load)
+```
+
+## 3.3 Prepare model data
+
+```{r}
+mData_Load <- bind_rows(
+  Raw_load_Exp1 %>%
+    mutate(exp = "Exp1", participant = factor(participant + 100)),
+  Raw_load_Exp2 %>%
+    mutate(exp = "Exp2", participant = factor(participant + 200)),
+  Raw_load_Exp3 %>%
+    mutate(
+      exp = ifelse(group == "noDist", "Exp3_noDist", "Exp3_Dist"),
+      participant = factor(participant + 300)
+    )
+) %>%
+  select(-condition, -group) %>%
+  mutate(exp = factor(exp))
+```
+
+## 3.4 Fit cognitive-load model
+
+```{r}
+model_linear <- brm(
+  formula = correct | trials(nRet) ~ 0 + exp + exp:load + (1 | gr(participant, by = exp)),
+  data = mData_Load,
+  family = binomial(),
+  prior = c(
+    prior(normal(0, 0.75), class = "b"),
+    prior(student_t(3, 0, 2), class = "sd", lb = 0)
+  ),
+  iter = 10000,
+  warmup = 2500,
+  chains = 8,
+  cores = 4,
+  backend = "cmdstanr",
+  control = list(adapt_delta = 0.95, max_treedepth = 15),
+  file = str_glue("{model_path}model_CL_linear")
+)
+```
+
+## 3.5 Extract predictions and coefficients
+
+```{r}
+results_linear <- conditional_effects(
+  model_linear,
+  effects = "load:exp",
+  re_formula = NA,
+  prob = 0.95
+)
+
+Pred_CL_linear <- results_linear[["load:exp"]] %>%
+  as_tibble() %>%
+  mutate(
+    group = label_cl_group(exp),
+    group = factor(
+      group,
+      levels = c(as.character(label_exp3_group(c("noDist", "Dist"))), "none")
+    )
+  )
+
+Beta_CL_linear <- fixef(model_linear) %>%
+  as.data.frame() %>%
+  rownames_to_column("term") %>%
+  as_tibble() %>%
+  filter(str_detect(term, ":load$")) %>%
+  transmute(
+    exp = term %>%
+      str_remove("^exp") %>%
+      str_remove(":load$"),
+    group = label_cl_group(exp),
+    group = factor(
+      group,
+      levels = c(as.character(label_exp3_group(c("noDist", "Dist"))), "none")
+    ),
+    beta_estimate = Estimate,
+    beta = scales::number(Estimate, accuracy = 0.01, style_negative = "minus"),
+    beta_label = as.character(str_glue("β = {beta}"))
+  )
+```
+
+## 3.6 Visualize cognitive-load results
+
+### 3.6.1 Experiment 1
+
+```{r}
+Plot_CL_Exp1 <- Data_Load_Exp1 %>%
+  mutate(
+    group = "none",
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
+  geom_line(color = "grey", linewidth = 1) +
+  geom_ribbon(
+    data = Pred_CL_linear %>% filter(exp == "Exp1"),
+    aes(x = load, ymin = lower__, ymax = upper__),
+    inherit.aes = FALSE,
+    fill = pred_ribbon_fill,
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = Pred_CL_linear %>% filter(exp == "Exp1"),
+    aes(x = load, y = estimate__),
+    inherit.aes = FALSE,
+    color = pred_line_color,
+    linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  geom_text(
+    data = Beta_CL_linear %>% filter(exp == "Exp1"),
+    aes(x = Inf, y = Inf, label = beta_label),
+    inherit.aes = FALSE,
+    hjust = 1.1,
+    vjust = 1.5,
+    color = pred_line_color,
+    size = 3.5
+  ) +
+  geom_errorbar(
+    aes(ymin = acc - acc_ci, ymax = acc + acc_ci),
+    linewidth = 0.8, width = 0
+  ) +
+  geom_errorbar(
+    aes(xmin = load - load_ci, xmax = load + load_ci),
+    linewidth = 0.8, orientation = "y", width = 0
+  ) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group) +
+  labs(
+    title = "Experiment 1",
+    tag = "a",
+    x = "Cognitive Load",
+    y = "Proportion Correct",
+    color = "Condition"
+  ) +
+  coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
+  scale_color_manual(values = c("#FF7F6F", "#2F7FC1", "#FFBE7A")) +
+  theme(
+    strip.text = element_text(color = "#bababa")
+  )
+```
+
+### 3.6.2 Experiment 2
+
+```{r}
+Plot_CL_Exp2 <- Data_Load_Exp2 %>%
+  mutate(
+    group = "none",
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
+  geom_ribbon(
+    data = Pred_CL_linear %>% filter(exp == "Exp2"),
+    aes(x = load, ymin = lower__, ymax = upper__),
+    inherit.aes = FALSE,
+    fill = pred_ribbon_fill,
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = Pred_CL_linear %>% filter(exp == "Exp2"),
+    aes(x = load, y = estimate__),
+    inherit.aes = FALSE,
+    color = pred_line_color,
+    linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  geom_text(
+    data = Beta_CL_linear %>% filter(exp == "Exp2"),
+    aes(x = Inf, y = Inf, label = beta_label),
+    inherit.aes = FALSE,
+    hjust = 1.1,
+    vjust = 1.5,
+    color = pred_line_color,
+    size = 3.5
+  ) +
+  geom_line(color = "grey", linewidth = 1) +
+  geom_errorbar(
+    aes(ymin = acc - acc_ci, ymax = acc + acc_ci),
+    linewidth = 0.8, width = 0
+  ) +
+  geom_errorbar(
+    aes(xmin = load - load_ci, xmax = load + load_ci),
+    linewidth = 0.8, orientation = "y", width = 0
+  ) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group) +
+  labs(
+    title = "Experiment 2",
+    tag = "b",
+    x = "Cognitive Load",
+    y = "Proportion Correct",
+    color = "Condition"
+  ) +
+  coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
+  scale_color_manual(values = c("#FF7F6F", "#21597B", "#FFBE7A")) +
+  theme(
+    strip.text = element_text(color = "#bababa")
+  )
+```
+
+### 3.6.3 Experiment 3
+
+```{r}
+Plot_CL_Exp3 <- Data_Load_Exp3 %>%
+  mutate(
+    group = label_exp3_group(group),
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = load, y = acc, group = 1, color = condition)) +
+  geom_ribbon(
+    data = Pred_CL_linear %>% filter(exp %in% c("Exp3_noDist", "Exp3_Dist")),
+    aes(x = load, ymin = lower__, ymax = upper__),
+    inherit.aes = FALSE,
+    fill = pred_ribbon_fill,
+    alpha = 0.2
+  ) +
+  geom_line(
+    data = Pred_CL_linear %>% filter(exp %in% c("Exp3_noDist", "Exp3_Dist")),
+    aes(x = load, y = estimate__),
+    inherit.aes = FALSE,
+    color = pred_line_color,
+    linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  geom_text(
+    data = Beta_CL_linear %>% filter(exp %in% c("Exp3_noDist", "Exp3_Dist")),
+    aes(x = Inf, y = Inf, label = beta_label),
+    inherit.aes = FALSE,
+    hjust = 1.1,
+    vjust = 1.5,
+    color = pred_line_color,
+    size = 3.5
+  ) +
+  geom_line(color = "grey", linewidth = 1) +
+  geom_errorbar(
+    aes(ymin = acc - acc_ci, ymax = acc + acc_ci),
+    linewidth = 0.8, width = 0
+  ) +
+  geom_errorbar(
+    aes(xmin = load - load_ci, xmax = load + load_ci),
+    linewidth = 0.8, orientation = "y", width = 0
+  ) +
+  geom_point(size = 2.5) +
+  facet_grid(~ group, scales = "free_x") +
+  labs(
+    title = "Experiment 3",
+    tag = "c",
+    x = "Cognitive Load",
+    y = "Proportion Correct",
+    color = "Condition"
+  ) +
+  coord_cartesian(ylim = c(0.4, 0.8), xlim = c(0.25, 0.65)) +
+  scale_color_manual(values = c("#FF7F6F", "#2F7FC1", "#21597B", "#FFBE7A", "#FF7F00"))
+```
+
+### 3.6.4 Combine and save plots
+
+```{r}
+Plot_cognitive_load <- ggarrange(
+  Plot_CL_Exp1, Plot_CL_Exp2, Plot_CL_Exp3,
+  common.legend = TRUE,
+  legend = "right",
+  legend.grob = get_legend(Plot_CL_Exp3),
+  ncol = 3,
+  nrow = 1,
+  widths = c(1.3, 1.3, 2.3)
+)
+
+ggsave(
+  path = figure_path,
+  filename = "Plot_cognitiveLoad.png",
+  plot = Plot_cognitive_load,
+  width = 10,
+  height = 4,
+  dpi = 300,
+  bg = "white"
+)
+```

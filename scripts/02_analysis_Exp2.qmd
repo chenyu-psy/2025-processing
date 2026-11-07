@@ -1,0 +1,779 @@
+---
+title: "Experiment 2 Analysis"
+author: "Chenyu Li"
+format: html
+editor: source
+editor_options:
+  chunk_output_type: console
+---
+
+# 1 Setup
+
+## 1.1 Reset workspace and set defaults
+
+```{r reset, include=FALSE}
+# Clear all plots and variables from workspace
+graphics.off()
+rm(list=ls(all.names=TRUE))
+
+# Set numerical precision and color schemes
+options(digits = 3)
+options(ggplot2.discrete.colour= c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A"))
+options(ggplot2.discrete.fill= c("#615F63","#FF7F6F","#2F7FC1","#FFBE7A"))
+```
+
+## 1.2 Load packages and helper functions
+
+```{r}
+# Install and load required packages
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+
+# CRAN packages for data analysis and visualization
+pacman::p_load(
+  char = c(
+    "tidyverse", "brms", "ggpubr", "emmeans", "bayestestR"
+  )
+)
+
+# GitHub packages for specialized functions
+pacman::p_load_gh(
+  char = c(
+    "chenyu-psy/smartr@v0.3.2",
+    "chenyu-psy/taskr@v0.3.1"
+  )
+)
+
+# Source helper functions for readable labels, model summaries, plots, and preprocessing
+source("./helpers/label_helpers.R")
+source("./helpers/model_helpers.R")
+source("./helpers/plot_helpers.R")
+source("./helpers/preprocess_helpers.R")
+
+# Set default ggplot theme
+theme_set(theme_analysis())
+
+# Define the position dodge used in plots
+dodge2 <- position_dodge(0.2)
+
+# Define task name and directory paths
+task <- "Exp2"
+model_path <- str_glue("./results/models/models_{task}/")
+figure_path <- str_glue("./results/figures/figures_{task}/")
+stats_path <- "./results/stats/"
+
+
+# Create directories if they do not exist
+dir.create(model_path, showWarnings = FALSE)
+dir.create(figure_path, showWarnings = FALSE)
+dir.create(stats_path, showWarnings = FALSE)
+
+# Run one background model-fitting task at a time so long Stan jobs are easy to monitor.
+taskr::init_queue(max_slots = 1)
+
+```
+
+# 2 Data preparation
+
+## 2.1 Load raw task and survey data
+
+Condition codes follow the manuscript notation: `B` = R, `C2` = D-J + R,
+and `D` = E + J + R.
+
+```{r}
+
+Raw_data <- str_glue("./data/source/Data_{task}.csv") %>%
+  read_csv() %>%
+  mutate(condition = factor(condition, levels = c("B", "C2", "D")))
+
+Survey_data <- str_glue("./data/source/Survey_{task}.csv") %>%
+  read_csv()
+
+```
+
+## 2.2 Apply participant exclusion criteria
+
+### 2.2.1 Self-reported distraction or aid use
+
+```{r}
+
+excluded_self_report <- Survey_data %>%
+  filter(str_detect(aid, "Yes") | str_detect(attention, "Yes")) %>%
+  pull(participant)
+
+message(str_glue(
+  "Excluded {length(excluded_self_report)} participants due to distraction or aid use."
+))
+
+```
+
+### 2.2.2 Low response rate or low accuracy
+
+```{r}
+
+excluded_low_performance <- Raw_data %>%
+  filter(
+    !participant %in% excluded_self_report,
+    screenID == "memory-resp",
+    condition %in% c("C2", "D")
+  ) %>%
+  filter_low_perf(
+    response_col = "response",
+    acc_col = "acc",
+    min_resp = 0.5,
+    min_acc = 0.7,
+    .by = "participant"
+  ) %>%
+  pull(participant)
+
+message(str_glue(
+  "Excluded {length(excluded_low_performance)} additional participants due to low response rate or low accuracy."
+))
+
+```
+
+### 2.2.3 Participant-exclusion summary
+
+```{r}
+excluded_participants <- union(
+  excluded_self_report,
+  excluded_low_performance
+)
+
+Data_Participant_Status <- Raw_data %>%
+  distinct(participant) %>%
+  mutate(
+    excluded_self_report = participant %in% excluded_self_report,
+    excluded_low_performance = participant %in% excluded_low_performance,
+    retained = !participant %in% excluded_participants
+  )
+
+Data_Participant_Exclusions <- Data_Participant_Status %>%
+  filter(!retained) %>%
+  transmute(
+    participant,
+    exclusion_reason = if_else(
+      excluded_self_report,
+      "Self-reported distraction or aid use",
+      "Low processing-task performance"
+    )
+  )
+
+Summary_Participant_Exclusion <- Data_Participant_Status %>%
+  summarise(
+    recruited = n(),
+    self_report = sum(excluded_self_report),
+    low_perf = sum(excluded_low_performance),
+    retained = sum(retained)
+  )
+
+Summary_Participant_Exclusion
+
+```
+
+## 2.3 Create analysis-ready datasets
+
+### 2.3.1 Processing-task trials
+
+```{r}
+# Processing task data from the Single-task phase
+Data_Processing_ST <- Raw_data %>%
+  filter(screenID == "processing", !participant %in% excluded_participants) %>%
+  mutate(
+    RT = rt / 1000,
+    trialID = as.numeric(str_remove(trialID, "P")),
+    ratio = pmin(leftSize / rightSize, rightSize / leftSize)
+  ) %>%
+  select(
+    participant, blockID, trialID, condition, phase,
+    ratio, correctResp, acc, RT
+  )
+
+# Processing task data from the Complex-span phase
+Data_Processing_CS <- Raw_data %>%
+  filter(screenID == "memory-resp", !participant %in% excluded_participants) %>%
+  mutate(
+    target = ifelse(leftImage == "image26", rightImage, leftImage),
+    RT = rt / 1000,
+    trialID = as.numeric(trialID),
+    ratio = pmin(leftSize / rightSize, rightSize / leftSize)
+  ) %>%
+  select(
+    participant, blockID, trialID, condition, phase,
+    ratio, correctResp, target, acc, RT
+  )
+
+Data_Processing <- bind_rows(
+  Data_Processing_ST,
+  Data_Processing_CS
+) %>%
+  arrange(participant, blockID, trialID, condition, phase, correctResp) %>%
+  filter(
+    trialID > max(trialID, na.rm = TRUE) - 15,
+    .by = c(participant, phase)
+  ) %>%
+  mutate(
+    RT = clean_rt(
+      RT,
+      min_cutoff = 0.2,
+      sd_cutoff = 3,
+      na_rm = TRUE
+    ),
+    .by = c(participant, phase)
+  ) %>%
+  mutate(
+    stepID = row_number(),
+    .by = c(participant, phase, blockID, trialID)
+  )
+
+# Save the processed data
+write_rds(Data_Processing, str_glue("./data/processed/Data_{task}_Processing.rds"))
+```
+
+### 2.3.2 Memory-task retrieval trials
+
+```{r}
+
+Data_Ret <- Raw_data %>%
+  filter(
+    screenID == "retrieval",
+    !participant %in% excluded_participants
+  ) %>%
+  mutate(
+    step = row_number(),
+    .by = c(participant, blockID, trialID)
+  ) %>%
+  select(
+    participant, blockID, trialID, condition,
+    step, target, distractor, response
+  ) %>%
+  mutate(trialID = as.numeric(trialID)) %>%
+  left_join(
+    Data_Processing_CS %>%
+      select(participant, blockID, trialID, target, acc, RT) %>%
+      rename(processing_acc = acc, processing_RT = RT),
+    by = c("participant", "blockID", "trialID", "target")
+  ) %>%
+  score_retrieval_response(
+    target_col = "target",
+    distractor_col = "distractor",
+    response_col = "response",
+    .by = c("participant", "blockID", "trialID", "condition")
+  ) %>%
+  mutate(
+    order = ifelse(condition == first(condition), 0, 1),
+    .by = participant
+  )
+
+# Save the processed data
+write_rds(Data_Ret, str_glue("./data/processed/Data_{task}_Ret.rds"))
+
+```
+
+### 2.3.3 Cognitive-load summary
+
+```{r}
+
+Data_Trial_Accuracy <- Data_Ret %>%
+  summarise(
+    acc = mean(Correct, na.rm = TRUE),
+    correct = sum(Correct, na.rm = TRUE),
+    nRet = sum(!is.na(Correct)),
+    .by = c(participant, condition)
+  )
+
+Data_Trial_Load <- Data_Processing %>%
+  filter(phase == "ST") %>%
+  summarise(
+    load = mean(RT, na.rm = TRUE) / 3,
+    .by = c(participant, condition)
+  )
+
+Data_Load <- Data_Trial_Accuracy %>%
+  left_join(Data_Trial_Load, by = c("participant", "condition")) %>%
+  filter(!is.na(load))
+
+# Save the processed data
+write_rds(Data_Load, str_glue("./data/processed/Data_{task}_load.rds"))
+
+```
+
+# 3 Data visualization
+
+## 3.1 Processing-task step effects
+
+### 3.1.1 Reaction time by step
+
+```{r}
+
+Plot_Processing_Step_RT <- Data_Processing %>%
+  filter(acc == 1, !is.na(RT)) %>%
+  agg_plot(y = RT, within = c(condition, phase, stepID), group = participant) %>%
+  mutate(
+    phase = label_phase(phase),
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = stepID, y = mean, group = phase, fill = phase)) +
+  geom_line() +
+  geom_errorbar(
+    aes(ymin = mean - ci, ymax = mean + ci),
+    width = 0.1,
+    position = dodge2
+  ) +
+  geom_point(shape = 23, size = 3, position = dodge2) +
+  facet_grid(~ condition) +
+  ylim(0.75, 2) +
+  scale_fill_manual(values = c("#FFBE7A", "#8FC0A9")) +
+  labs(
+    y = "Reaction Time (s)",
+    x = "Step",
+    fill = "Phase",
+    title = "Reaction Time",
+    tag = "a"
+  )
+
+```
+
+### 3.1.2 Accuracy by step
+
+```{r}
+
+Plot_Processing_Step_Accuracy <- Data_Processing %>%
+  agg_plot(y = acc, within = c(condition, phase, stepID), group = participant) %>%
+  mutate(
+    phase = label_phase(phase),
+    condition = label_condition(condition)
+  ) %>%
+  ggplot(aes(x = stepID, y = mean, group = phase, fill = phase)) +
+  geom_line() +
+  geom_errorbar(
+    aes(ymin = mean - ci, ymax = mean + ci),
+    width = 0.1,
+    position = dodge2
+  ) +
+  geom_point(shape = 23, size = 3, position = dodge2) +
+  facet_grid(~ condition) +
+  ylim(0.5, 1.03) +
+  scale_fill_manual(values = c("#FFBE7A", "#8FC0A9")) +
+  labs(
+    y = "Proportion Correct",
+    x = "Step",
+    fill = "Phase",
+    title = "Accuracy",
+    tag = "b"
+  )
+
+```
+
+### 3.1.3 Combine and save step-effect plots
+
+```{r}
+
+(Plot_Processing_Step <- ggarrange(
+  Plot_Processing_Step_RT, Plot_Processing_Step_Accuracy,
+  common.legend = TRUE, legend = "right",
+  ncol = 2, nrow = 1, widths = c(1, 1)
+))
+
+ggsave(
+  path = figure_path,
+  filename = str_glue("Plot_{task}_processing_step.png"),
+  plot = Plot_Processing_Step,
+  width = 12,
+  height = 4,
+  dpi = 300,
+  bg = "white"
+)
+
+```
+
+## 3.2 Memory-task accuracy by condition
+
+```{r}
+
+Plot_Memory_Accuracy <- Data_Ret %>%
+  agg_plot(y = Correct, within = condition, group = participant) %>%
+  mutate(condition = label_condition(condition)) %>%
+  ggplot(aes(x = condition, y = mean, fill = condition)) +
+  geom_errorbar(
+    aes(ymin = mean - ci, ymax = mean + ci),
+    width = 0.05,
+    position = dodge2
+  ) +
+  geom_point(shape = 23, size = 3, position = dodge2) +
+  ylim(0.4, 0.7) +
+  labs(
+    y = "Proportion Correct",
+    x = "Condition"
+  ) +
+  scale_fill_manual(values = c("#FF7F6F", "#2F7FC1", "#FFBE7A")) +
+  theme(
+    legend.position = "none"
+  )
+
+ggsave(
+  path = figure_path,
+  filename = str_glue("Plot_{task}_response.png"),
+  plot = Plot_Memory_Accuracy,
+  width = 4,
+  height = 4.5,
+  dpi = 300,
+  bg = "white"
+)
+
+```
+
+# 4 Bayesian analysis
+
+Model-fitting chunks below submit background tasks through `taskr`. Run them
+interactively, wait for each task to finish, and then run the corresponding
+prior and Bayes-factor chunks.
+
+## 4.1 Processing-task models
+
+### 4.1.1 Reaction-time model
+
+#### Prepare reaction-time model data
+
+Condition uses equal-prior contrasts across `B`, `C2`, and `D`. Phase is coded
+as `0` for Single-task and `1` for Complex-span, and step is zero-based.
+
+```{r}
+
+mData_Processing_RT <- Data_Processing %>%
+  filter(acc == 1, !is.na(RT)) %>%
+  mutate(
+    condition = factor(condition),
+    phase = ifelse(phase == "ST", 0, 1),
+    step = stepID - 1
+  )
+
+contrasts(mData_Processing_RT$condition) <- bayestestR::contr.equalprior(n = 3)
+
+Formula_Processing_RT <- RT ~ 1 + condition * phase * step +
+  (1 + condition * phase * step | participant)
+
+Priors_Processing_RT <- c(
+  prior(normal(-0.4, 0.5), class = "Intercept"),
+  prior(normal(0, 0.2), class = "b"),
+  prior(student_t(3, 0, 0.5), class = "sd", lb = 0)
+)
+```
+
+#### Fit reaction-time model
+
+```{r}
+
+taskr::submit_task(
+  fun = brms::brm,
+  args = list(
+    formula = Formula_Processing_RT,
+    data = mData_Processing_RT,
+    family = lognormal(),
+    prior = Priors_Processing_RT,
+    chains = 8,
+    iter = 10000,
+    warmup = 2500,
+    cores = 4,
+    control = list(adapt_delta = 0.95, max_treedepth = 15),
+    save_pars = save_pars(all = TRUE),
+    backend = "cmdstanr",
+    file = str_glue("{model_path}Model_{task}_Processing_RT"),
+    file_refit = "on_change"
+  ),
+  label = str_glue("Model_{task}_Processing_RT"),
+  output = "none"
+)
+
+```
+
+#### Fit reaction-time prior model
+```{r}
+
+# Run this block after the reaction-time model task has completed.
+Model_Processing_RT <- read_rds(
+  str_glue("{model_path}Model_{task}_Processing_RT.rds")
+)
+
+taskr::submit_task(
+  fun = unupdate,
+  args = list(model = Model_Processing_RT),
+  label = str_glue("Prior_{task}_Processing_RT"),
+  output = "all"
+)
+
+Model_Prior_Processing_RT <- taskr::get_task_result(
+  max(taskr::get_task_overview(
+    label = str_glue("Prior_{task}_Processing_RT")
+  )$id)
+)
+
+```
+
+#### Compute reaction-time Bayes factors
+```{r}
+# Phase effect within each condition, averaged over step.
+BF_Processing_RT_Phase <- tidy_bf_table(
+  bf_pairwise(
+    Model_Processing_RT,
+    Model_Prior_Processing_RT,
+    specs = ~ phase | condition,
+    cont_values = list(phase = c(0, 1))
+  )$bayesfactor,
+  task = task,
+  model = "Processing_RT",
+  analysis = "phase_pairwise"
+)
+
+BF_Processing_RT_Phase
+
+# Condition effect within each phase, averaged over step.
+BF_Processing_RT_Condition <- tidy_bf_table(
+  bf_pairwise(
+    Model_Processing_RT,
+    Model_Prior_Processing_RT,
+    specs = ~ condition | phase,
+    cont_values = list(phase = c(0, 1))
+  )$bayesfactor,
+  task = task,
+  model = "Processing_RT",
+  analysis = "condition_pairwise"
+)
+
+BF_Processing_RT_Condition
+
+# Phase difference in step trends within each condition.
+BF_Processing_RT_Step <- tidy_bf_table(
+  bf_emtrends(
+    Model_Processing_RT,
+    Model_Prior_Processing_RT,
+    specs = ~ phase | condition,
+    var = "step",
+    cont_values = list(phase = c(0, 1)),
+    compare = TRUE
+  )$bayesfactor,
+  task = task,
+  model = "Processing_RT",
+  analysis = "phase_difference_in_step_trend"
+)
+
+BF_Processing_RT_Step
+```
+
+### 4.1.2 Accuracy model
+
+#### Prepare accuracy model data
+
+```{r}
+mData_Processing_Accuracy <- Data_Processing %>%
+  mutate(
+    condition = factor(condition),
+    phase = ifelse(phase == "ST", 0, 1),
+    step = stepID - 1
+  ) %>%
+  summarise(
+    score = sum(acc),
+    nRet = n(),
+    .by = c(participant, phase, condition, step)
+  )
+
+contrasts(mData_Processing_Accuracy$condition) <- bayestestR::contr.equalprior(n = 3)
+
+Formula_Processing_Accuracy <- score | trials(nRet) ~
+  1 + condition * phase * step +
+  (1 + condition * phase * step | participant)
+
+Priors_Processing_Accuracy <- c(
+  prior(logistic(0, 0.75), class = "Intercept"),
+  prior(logistic(0, 0.25), class = "b"),
+  prior(student_t(3, 0, 1), class = "sd", lb = 0)
+)
+```
+
+#### Fit accuracy model
+
+```{r}
+
+taskr::submit_task(
+  fun = brms::brm,
+  args = list(
+    formula = Formula_Processing_Accuracy,
+    data = mData_Processing_Accuracy,
+    family = binomial(),
+    prior = Priors_Processing_Accuracy,
+    chains = 8,
+    iter = 10000,
+    warmup = 2500,
+    cores = 4,
+    backend = "cmdstanr",
+    control = list(adapt_delta = 0.95, max_treedepth = 15),
+    save_pars = save_pars(all = TRUE),
+    file = str_glue("{model_path}Model_{task}_Processing_Correct"),
+    file_refit = "on_change"
+  ),
+  label = str_glue("Model_{task}_Processing_Correct"),
+  output = "none"
+)
+
+```
+
+#### Fit accuracy prior model
+```{r}
+
+# Run this block after the accuracy model task has completed.
+Model_Processing_Accuracy <- read_rds(
+  str_glue("{model_path}Model_{task}_Processing_Correct.rds")
+)
+
+taskr::submit_task(
+  fun = unupdate,
+  args = list(model = Model_Processing_Accuracy),
+  label = str_glue("Prior_{task}_Processing_Correct"),
+  output = "all"
+)
+
+Model_Prior_Processing_Accuracy <- taskr::get_task_result(
+  max(taskr::get_task_overview(
+    label = str_glue("Prior_{task}_Processing_Correct")
+  )$id)
+)
+
+```
+
+#### Compute accuracy Bayes factors
+```{r}
+# Phase effect within each condition, averaged over step.
+BF_Processing_Accuracy_Phase <- tidy_bf_table(
+  bf_pairwise(
+    Model_Processing_Accuracy,
+    Model_Prior_Processing_Accuracy,
+    specs = ~ phase | condition,
+    cont_values = list(phase = c(0, 1))
+  )$bayesfactor,
+  task = task,
+  model = "Processing_Correct",
+  analysis = "phase_pairwise"
+)
+
+BF_Processing_Accuracy_Phase
+
+# Condition effect within each phase, averaged over step.
+BF_Processing_Accuracy_Condition <- tidy_bf_table(
+  bf_pairwise(
+    Model_Processing_Accuracy,
+    Model_Prior_Processing_Accuracy,
+    specs = ~ condition | phase,
+    cont_values = list(phase = c(0, 1))
+  )$bayesfactor,
+  task = task,
+  model = "Processing_Correct",
+  analysis = "condition_pairwise"
+)
+
+BF_Processing_Accuracy_Condition
+
+# Phase difference in step trends within each condition.
+BF_Processing_Accuracy_Step <- tidy_bf_table(
+  bf_emtrends(
+    Model_Processing_Accuracy,
+    Model_Prior_Processing_Accuracy,
+    specs = ~ phase | condition,
+    var = "step",
+    cont_values = list(phase = c(0, 1)),
+    compare = TRUE
+  )$bayesfactor,
+  task = task,
+  model = "Processing_Correct",
+  analysis = "phase_difference_in_step_trend"
+)
+
+BF_Processing_Accuracy_Step
+```
+
+### 4.1.3 Combine and save Bayes factors
+
+```{r}
+BF_Processing <- bind_rows(
+  BF_Processing_RT_Phase,
+  BF_Processing_RT_Condition,
+  BF_Processing_RT_Step,
+  BF_Processing_Accuracy_Phase,
+  BF_Processing_Accuracy_Condition,
+  BF_Processing_Accuracy_Step
+)
+
+write_csv(BF_Processing, str_glue("{stats_path}BF_{task}_processing.csv"))
+
+BF_Processing
+```
+
+## 4.2 Memory-task model
+
+### 4.2.1 Prepare memory model data
+
+```{r}
+mData_Memory_Accuracy <- Data_Ret %>%
+  select(participant, condition, Correct) %>%
+  summarise(
+    Resp = sum(Correct, na.rm = TRUE),
+    nResp = sum(!is.na(Correct)),
+    .by = c(participant, condition)
+  )
+
+Formula_Memory_Accuracy <- Resp | trials(nResp) ~
+  1 + condition + (1 + condition | participant)
+
+Priors_Memory_Accuracy <- c(
+  prior(logistic(0, 0.75), class = "Intercept"),
+  prior(logistic(0, 0.25), class = "b"),
+  prior(student_t(3, 0, 2), class = "sd", lb = 0)
+)
+```
+
+### 4.2.2 Fit memory model
+
+```{r}
+taskr::submit_task(
+  fun = brms::brm,
+  args = list(
+    data = mData_Memory_Accuracy,
+    formula = Formula_Memory_Accuracy,
+    family = binomial(),
+    prior = Priors_Memory_Accuracy,
+    chains = 8,
+    iter = 10000,
+    warmup = 2500,
+    cores = 4,
+    control = list(adapt_delta = 0.95, max_treedepth = 15),
+    save_pars = save_pars(all = TRUE),
+    sample_prior = "yes",
+    backend = "cmdstanr",
+    file = str_glue("{model_path}Model_{task}_Memory_Correct"),
+    file_refit = "on_change"
+  ),
+  label = str_glue("Model_{task}_Memory_Correct"),
+  output = "none"
+)
+```
+
+### 4.2.3 Compute memory Bayes factors
+
+```{r}
+# Run this block after the memory model task has completed.
+Model_Memory_Accuracy <- read_rds(
+  str_glue("{model_path}Model_{task}_Memory_Correct.rds")
+)
+
+BF_Memory_Accuracy <- tidy_bf_table(
+  bf_pairwise(
+    Model_Memory_Accuracy,
+    specs = ~ condition
+  )$bayesfactor,
+  task = task,
+  model = "Memory_Correct",
+  analysis = "condition_pairwise"
+)
+
+write_csv(BF_Memory_Accuracy, str_glue("{stats_path}BF_{task}_memory.csv"))
+
+BF_Memory_Accuracy
+```
